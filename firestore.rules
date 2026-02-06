@@ -20,18 +20,14 @@ service cloud.firestore {
     
     // ============= USERS =============
     match /users/{userId} {
-      // Anyone can read their own user doc, admins can read all
-      allow read: if isOwner(userId) || isAdmin();
+      // Anyone can read user data (needed for guest mode and displaying square owners)
+      allow read, list: if true;
       
-      // Only admins can create users (signup handled by Cloud Function or client with special permissions)
-      // In practice, allow create for authenticated users (signup)
-      allow create: if isSignedIn() && request.auth.uid == userId;
+      // Only authenticated users can create accounts
+      allow create: if isSignedIn();
       
-      // Users can update their own non-critical fields
-      // Admins can update anything
-      allow update: if isAdmin() || 
-                       (isOwner(userId) && 
-                        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin', 'tokens', 'tokensSpent']));
+      // Users can update their own data, admins can update anything
+      allow update: if isOwner(userId) || isAdmin();
       
       // Only admins can delete users
       allow delete: if isAdmin();
@@ -39,17 +35,16 @@ service cloud.firestore {
     
     // ============= POOLS =============
     match /pools/{poolId} {
-      // Anyone logged in can read pools (to view games)
-      allow read: if isSignedIn();
+      // Anyone can read pools (including guests in view-only mode)
+      allow read, list: if true;
       
       // Only admins can create pools
       allow create: if isAdmin();
       
-      // Users can update pool grid (select squares)
-      // Admins can update everything
+      // Only authenticated users can update pools
+      // Users can only update grid (select squares), admins can update everything
       allow update: if isAdmin() || 
-                       (isSignedIn() && 
-                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['grid']));
+                      (isSignedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['grid']));
       
       // Only admins can delete pools
       allow delete: if isAdmin();
@@ -57,15 +52,16 @@ service cloud.firestore {
     
     // ============= ACTIVITY LOG =============
     match /activityLog/{logId} {
-      // Anyone logged in can read activity logs
-      allow read: if isSignedIn();
+      // Anyone can read activity log (including guests)
+      allow read, list: if true;
       
-      // Anyone logged in can create activity logs
-      // (they log their own actions)
-      allow create: if isSignedIn();
+      // Authenticated users can create activity entries
+      // ALSO allow unauthenticated password reset logging (for security tracking)
+      allow create: if isSignedIn() || 
+                       (request.resource.data.action in ['Password Reset Requested', 'Password Reset Failed']);
       
-      // Only admins can update or delete logs
-      allow update, delete: if isAdmin();
+      // No one can update or delete activity logs
+      allow update, delete: if false;
     }
   }
 }

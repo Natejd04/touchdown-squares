@@ -47,14 +47,20 @@
                 </div>
                 <div class="form-group">
                     <label>Password:</label>
-                    <input type="password" id="loginPassword" placeholder="Password">
+                    <div style="position: relative;">
+                        <input type="password" id="loginPassword" placeholder="Password">
+                        <button type="button" class="password-toggle" onclick="app.togglePasswordVisibility('loginPassword')">👁️</button>
+                    </div>
                 </div>
                 <div id="loginError" class="error"></div>
                 <button class="btn btn-primary" onclick="app.login()">Login</button>
                 <p style="margin-top: 15px; text-align: center;">
                     <a href="#" onclick="app.showResetPasswordModal(); return false;" style="color: #2d5a3d;">Forgot Password?</a>
                 </p>
-                <p style="margin-top: 15px; text-align: center;">
+                <p style="margin-top: 10px; text-align: center;">
+                    <a href="#" onclick="app.showInstructions(); return false;" style="color: #17a2b8; font-weight: bold;">📖 How to Play</a>
+                </p>
+                <p style="margin-top: 10px; text-align: center;">
                     <a href="#" onclick="app.browseAsGuest(); return false;" style="color: #2d5a3d; font-weight: bold;">Browse as Guest (View Only)</a>
                 </p>
             </div>
@@ -75,7 +81,10 @@
                 </div>
                 <div class="form-group">
                     <label>Password:</label>
-                    <input type="password" id="signupPassword" placeholder="Password (min 6 characters)">
+                    <div style="position: relative;">
+                        <input type="password" id="signupPassword" placeholder="Password (min 6 characters)">
+                        <button type="button" class="password-toggle" onclick="app.togglePasswordVisibility('signupPassword')">👁️</button>
+                    </div>
                 </div>
                 <div id="signupError" class="error"></div>
                 <div id="signupSuccess" class="success"></div>
@@ -100,6 +109,7 @@
                 <button class="nav-btn active" onclick="app.showSection('pools')">Football Pools</button>
                 <button class="nav-btn" id="profileNavBtn" onclick="app.showSection('profile')">My Profile</button>
                 <button class="nav-btn" id="activityNavBtn" style="display: none;" onclick="app.showSection('activity')">Activity Log</button>
+                <button class="nav-btn" onclick="app.showInstructions()" style="background: #17a2b8; color: white;">📖 How to Play</button>
             </div>
 
             <div id="adminPanel" class="hidden">
@@ -203,11 +213,17 @@
             <p>Please change your password from the default.</p>
             <div class="form-group">
                 <label>New Password:</label>
-                <input type="password" id="newPassword" placeholder="New Password (min 6 characters)">
+                <div style="position: relative;">
+                    <input type="password" id="newPassword" placeholder="New Password (min 6 characters)">
+                    <button type="button" class="password-toggle" onclick="app.togglePasswordVisibility('newPassword')">👁️</button>
+                </div>
             </div>
             <div class="form-group">
                 <label>Confirm Password:</label>
-                <input type="password" id="confirmPassword" placeholder="Confirm Password">
+                <div style="position: relative;">
+                    <input type="password" id="confirmPassword" placeholder="Confirm Password">
+                    <button type="button" class="password-toggle" onclick="app.togglePasswordVisibility('confirmPassword')">👁️</button>
+                </div>
             </div>
             <div id="changePasswordError" class="error"></div>
             <button class="btn btn-primary" onclick="app.changePassword()">Change Password</button>
@@ -268,6 +284,179 @@
             <div id="randomSelectSuccess" class="success"></div>
             <button class="btn btn-primary" id="randomSelectConfirmBtn" onclick="app.confirmRandomSelection()">Select Randomly</button>
             <button class="btn btn-secondary" onclick="app.closeModal('randomSelectModal')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Instructions Modal -->
+    <div id="instructionsModal" class="modal">
+        <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+            <span class="close" onclick="app.closeModal('instructionsModal')">&times;</span>
+            <h2>📖 How to Play Football Squares</h2>
+            
+            <div class="instructions-section">
+                <h3>🎯 What Are Football Squares?</h3>
+                <p>Football Squares is a fun betting game where you claim squares on a 10x10 grid. Each square represents a potential score combination. Winners are determined by the last digit of each team's score at the end of each quarter and the final score!</p>
+                
+                <div class="grid-example">
+                    <div style="text-align: center; margin: 15px 0;">
+                        <strong>Example Grid:</strong>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(4, 60px); gap: 2px; justify-content: center; margin: 10px 0;">
+                        <div style="background: #f8f9fa; padding: 8px; text-align: center; font-weight: bold;">🏈</div>
+                        <div style="background: #2d5a3d; color: white; padding: 8px; text-align: center;">3</div>
+                        <div style="background: #2d5a3d; color: white; padding: 8px; text-align: center;">7</div>
+                        <div style="background: #2d5a3d; color: white; padding: 8px; text-align: center;">0</div>
+                        
+                        <div style="background: #c62828; color: white; padding: 8px; text-align: center;">4</div>
+                        <div style="background: white; border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 0.8em;">Empty</div>
+                        <div style="background: #c8e6c9; border: 2px solid #4caf50; padding: 8px; text-align: center; font-size: 0.8em;">You</div>
+                        <div style="background: #bbdefb; padding: 8px; text-align: center; font-size: 0.8em;">Sarah</div>
+                        
+                        <div style="background: #c62828; color: white; padding: 8px; text-align: center;">1</div>
+                        <div style="background: #bbdefb; padding: 8px; text-align: center; font-size: 0.8em;">Mike</div>
+                        <div style="background: white; border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 0.8em;">Empty</div>
+                        <div style="background: #bbdefb; padding: 8px; text-align: center; font-size: 0.8em;">Lisa</div>
+                        
+                        <div style="background: #c62828; color: white; padding: 8px; text-align: center;">9</div>
+                        <div style="background: #bbdefb; padding: 8px; text-align: center; font-size: 0.8em;">Tom</div>
+                        <div style="background: #bbdefb; padding: 8px; text-align: center; font-size: 0.8em;">Amy</div>
+                        <div style="background: white; border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 0.8em;">Empty</div>
+                    </div>
+                    <div style="text-align: center; margin-top: 10px; font-size: 0.9em; color: #666;">
+                        <strong>Seahawks (Green)</strong> scores across the top<br>
+                        <strong>Patriots (Red)</strong> scores down the side
+                    </div>
+                </div>
+            </div>
+
+            <div class="instructions-section">
+                <h3>💰 Getting Tokens</h3>
+                <p><strong>Tokens are your currency!</strong> You use tokens to claim squares.</p>
+                <ul>
+                    <li>An <strong>admin must grant you tokens</strong> to start playing</li>
+                    <li>Each square costs a certain number of tokens (shown in the pool details)</li>
+                    <li><strong>⚠️ Important:</strong> Once you use up all your tokens, you cannot get more unless an admin grants them</li>
+                    <li>Spend wisely!</li>
+                </ul>
+            </div>
+
+            <div class="instructions-section">
+                <h3>🎮 How to Select Squares</h3>
+                <p><strong>Step 1:</strong> Browse available pools and choose one to join</p>
+                <p><strong>Step 2:</strong> Tap any <span style="background: white; border: 1px solid #ddd; padding: 2px 8px;">white (empty)</span> square to claim it</p>
+                <ul>
+                    <li><span style="background: #c8e6c9; border: 2px solid #4caf50; padding: 2px 8px;">Green squares</span> = Your squares</li>
+                    <li><span style="background: #bbdefb; padding: 2px 8px;">Blue squares</span> = Other players' squares</li>
+                    <li><span style="background: white; border: 1px solid #ddd; padding: 2px 8px;">White squares</span> = Available to claim</li>
+                </ul>
+                <p><strong>Step 3:</strong> Confirm your selection and spend the required tokens</p>
+            </div>
+
+            <div class="instructions-section">
+                <h3>🔄 Changing Your Mind</h3>
+                <p><strong>You CAN unselect your squares!</strong></p>
+                <ul>
+                    <li>Click on any of <span style="background: #c8e6c9; border: 2px solid #4caf50; padding: 2px 8px;">your green squares</span></li>
+                    <li>Confirm you want to remove it</li>
+                    <li>Your tokens will be <strong>refunded immediately</strong></li>
+                    <li>⚠️ <strong>Only works BEFORE the game starts!</strong> Once locked, no changes allowed</li>
+                </ul>
+            </div>
+
+            <div class="instructions-section">
+                <h3>🔒 When Games Start</h3>
+                <p><strong>Games lock automatically when:</strong></p>
+                <ul>
+                    <li>All 100 squares are filled, OR</li>
+                    <li>The admin manually locks the pool</li>
+                </ul>
+                <p><strong>After locking:</strong></p>
+                <ul>
+                    <li>❌ No more square selections allowed</li>
+                    <li>❌ Cannot unselect squares</li>
+                    <li>The admin assigns random numbers (?) to rows and columns</li>
+                    <li>The game begins!</li>
+                </ul>
+            </div>
+
+            <div class="instructions-section">
+                <h3>❌ If a Pool Doesn't Fill</h3>
+                <p><strong>Don't worry!</strong> If not all squares are claimed:</p>
+                <ul>
+                    <li>The admin may <strong>delete the pool</strong></li>
+                    <li>All participants get their <strong>tokens refunded</strong> automatically</li>
+                    <li>No one loses anything!</li>
+                </ul>
+            </div>
+
+            <div class="instructions-section">
+                <h3>🏆 How Winners Are Determined</h3>
+                <p><strong>Winners are based on the last digit of each team's score!</strong></p>
+                
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <strong>Example:</strong><br>
+                    End of 1st Quarter: Seahawks 17, Patriots 14<br>
+                    Last digits: <strong>7</strong> (Seahawks) and <strong>4</strong> (Patriots)<br>
+                    Winner: Person with square at row 4, column 7!
+                </div>
+
+                <p><strong>5 Chances to Win:</strong></p>
+                <ol>
+                    <li><strong>1st Quarter:</strong> Winner gets 20% of pool</li>
+                    <li><strong>2nd Quarter:</strong> Winner gets 20% of pool</li>
+                    <li><strong>3rd Quarter:</strong> Winner gets 20% of pool</li>
+                    <li><strong>4th Quarter:</strong> Winner gets 20% of pool</li>
+                    <li><strong>Final Score:</strong> Winner gets 20% of pool</li>
+                </ol>
+
+                <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #ffc107;">
+                    <strong>💡 Overtime Tip:</strong><br>
+                    If there's NO overtime, the 4th quarter and final score are usually the same, so that winner gets <strong>40% of the pool</strong>!<br>
+                    If there IS overtime, they're different, creating 5 separate winners.
+                </div>
+            </div>
+
+            <div class="instructions-section">
+                <h3>🎲 Random Selection</h3>
+                <p>Can't decide which squares to pick? Use <strong>Random Selection!</strong></p>
+                <ul>
+                    <li>Click "🎲 Random" button</li>
+                    <li>Choose how many squares you want (1-20)</li>
+                    <li>The system randomly picks squares for you</li>
+                    <li>Costs the same tokens as manual selection</li>
+                </ul>
+            </div>
+
+            <div class="instructions-section">
+                <h3>📊 Tracking Your Squares</h3>
+                <ul>
+                    <li>Your squares are highlighted in <span style="background: #c8e6c9; border: 2px solid #4caf50; padding: 2px 8px;">green</span></li>
+                    <li>Check the "Activity Log" to see your selections</li>
+                    <li>Your remaining tokens are shown at the top of the page</li>
+                    <li>Winner squares light up in <span style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); padding: 2px 8px;">gold</span> after scores are entered!</li>
+                </ul>
+            </div>
+
+            <div class="instructions-section">
+                <h3>❓ Important Notes</h3>
+                <ul>
+                    <li><strong>Random Numbers:</strong> The <strong>?</strong> on the grid are randomly assigned when the game starts</li>
+                    <li><strong>Token Limits:</strong> You can only spend tokens you have. Plan wisely!</li>
+                    <li><strong>Multiple Pools:</strong> You can join multiple pools if you have enough tokens</li>
+                    <li><strong>Same Winner:</strong> Yes, you can win multiple quarters with the same square!</li>
+                    <li><strong>Fair Play:</strong> All squares have equal chance - no square is "better" until numbers are assigned</li>
+                </ul>
+            </div>
+
+            <div class="instructions-section" style="background: #e8f5e9; padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50;">
+                <h3>🎉 Good Luck!</h3>
+                <p style="margin: 0;">Football Squares is all about luck and fun! Pick your squares, watch the game, and may the odds be ever in your favor!</p>
+                <p style="margin: 10px 0 0 0; font-weight: bold;">Go Hawks! 🦅💚</p>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-primary" onclick="app.closeModal('instructionsModal')">Got It!</button>
+            </div>
         </div>
     </div>
 

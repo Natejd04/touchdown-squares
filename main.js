@@ -12,6 +12,13 @@ import {
 } from 'firebase/auth';
 
 import {
+  onSnapshot,
+  doc,
+  runTransaction,
+  getDoc
+} from 'firebase/firestore';
+
+import {
   getAllUsers,
   getUser,
   createUser as dbCreateUser,
@@ -40,6 +47,30 @@ const app = {
   currentActivityPage: 1,
   filteredActivityLog: [],
   ITEMS_PER_PAGE: 100,
+  poolListener: null, // For real-time pool updates
+  currentViewingPoolId: null,
+
+  // Helper function to format names as "First L."
+  formatName(firstName, lastName) {
+    if (!firstName || !lastName) return 'Unknown';
+    return `${firstName} ${lastName.charAt(0)}.`;
+  },
+
+  // Toggle password visibility
+  togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    const button = input.nextElementSibling;
+    if (input.type === 'password') {
+      input.type = 'text';
+      if (button) button.textContent = '🙈';
+    } else {
+      input.type = 'password';
+      if (button) button.textContent = '👁️';
+    }
+  },
+  currentViewingPoolId: null, // Track which pool we're viewing
 
 
   // Seahawks taglines (randomly selected on page load)
@@ -56,7 +87,7 @@ const app = {
     "Russell Wilson > Tom Shady... I mean Brady! Go Hawks! 🏈",
     "Patriots: Spying on signals since 2007. Seahawks: Just being awesome since 1976! 🦅",
     "The only rings the Patriots deserve are onion rings! Go Seahawks! 🏆",
-    "Seahawks: Built by Carroll, not controversy! 💚💙",
+    "Seahawks: Built by Macdonald, not controversy! 💚💙",
     "Why do Patriots fans love their team? Because misery loves company! Go Hawks! 🦅",
     "Patriots' favorite play: The cover-up! Seahawks' favorite play: Touchdowns! 🏈",
     "Deflategate? More like Defeat-gate when they face the Hawks! 🦅",
@@ -78,6 +109,13 @@ const app = {
       console.warn('⚠️ Tagline element not found!');
     }
   },
+
+  // Format name as "First L."
+  formatName(firstName, lastName) {
+    if (!firstName || !lastName) return 'Unknown';
+    return `${firstName} ${lastName.charAt(0)}.`;
+  },
+
   // Initialize the app
   async init() {
     console.log('🚀 Initializing Touchdown Squares...');
@@ -93,6 +131,10 @@ const app = {
         const userData = await getUser(user.uid);
         if (userData) {
           this.currentUser = { ...userData, id: user.uid };
+          
+          // Load data AFTER authentication
+          await this.loadData();
+          
           this.showMainContent();
           
           if (this.currentUser.needsPasswordChange) {
@@ -101,15 +143,13 @@ const app = {
         }
       } else if (this.isGuestMode) {
         // Guest mode
+        await this.loadData();
         this.showMainContent();
       } else {
         // No user signed in
         this.showAuthSection();
       }
     });
-
-    // Load initial data
-    await this.loadData();
   },
 
   // Load data from Firebase
@@ -119,9 +159,7 @@ const app = {
       this.pools = await getAllPools();
       this.activityLog = await getActivityLogs(500);
       console.log(`📊 Loaded ${this.users.length} users, ${this.pools.length} pools, ${this.activityLog.length} logs`);
-      
-      // Ensure admin user exists
-      await this.ensureAdminExists();
+
     } catch (error) {
       console.error('Error loading data:', error);
       this.showToast('Error loading data. Please refresh.', 'error');
@@ -309,10 +347,11 @@ const app = {
   },
 
   // Activity logging
-  async logActivity(action, details) {
+  async logActivity(action, details, targetUserId = null) {
     const entry = {
       user: this.currentUser ? `${this.currentUser.firstName} ${this.currentUser.lastName}` : 'System',
       userId: this.currentUser ? this.currentUser.id : null,
+      targetUserId: targetUserId, // Track which user was affected (for admin actions)
       isAdmin: this.currentUser ? this.currentUser.isAdmin : false,
       action,
       details
@@ -429,9 +468,46 @@ const app = {
     const pool = this.pools.find(p => p.id === poolId);
     if (!pool) return;
 
+    this.currentViewingPoolId = poolId;
     document.getElementById('poolsList').classList.add('hidden');
     document.getElementById('poolView').classList.remove('hidden');
     this.renderPoolView(pool);
+    
+    // Set up real-time listener for this pool
+    this.setupPoolListener(poolId);
+  },
+
+  // Set up real-time listener for pool updates (prevents race conditions)
+  setupPoolListener(poolId) {
+    // Clean up existing listener
+    if (this.poolListener) {
+      this.poolListener();
+    }
+    
+    // Set up new listener
+    this.poolListener = onSnapshot(doc(db, 'pools', poolId), (snapshot) => {
+      if (snapshot.exists() && this.currentViewingPoolId === poolId) {
+        const updatedPool = { id: snapshot.id, ...snapshot.data() };
+        
+        // Convert flat grid to 2D
+        if (updatedPool.grid && !Array.isArray(updatedPool.grid[0])) {
+          const grid2D = [];
+          for (let row = 0; row < 10; row++) {
+            grid2D.push(updatedPool.grid.slice(row * 10, (row + 1) * 10));
+          }
+          updatedPool.grid = grid2D;
+        }
+        
+        // Update local pool data
+        const poolIndex = this.pools.findIndex(p => p.id === poolId);
+        if (poolIndex >= 0) {
+          this.pools[poolIndex] = updatedPool;
+        }
+        
+        // Re-render grid silently (don't show toast)
+        this.renderPoolView(updatedPool, true);
+      }
+    });
   },
 
   backToPoolsList() {
@@ -440,7 +516,7 @@ const app = {
     this.displayPools();
   },
 
-  renderPoolView(pool) {
+  renderPoolView(pool, silent = false) {
     const container = document.getElementById('poolDetails');
     const filledSquares = pool.grid.flat().filter(s => s !== null).length;
     const availableSquares = 100 - filledSquares;
@@ -493,7 +569,10 @@ const app = {
     }
     
     if (!this.currentUser.isAdmin && !pool.isLocked && !this.isGuestMode) {
-      html += '<div style="text-align: center; font-size: 0.9em; color: #666; margin: 10px 0;">Tap any empty square to claim it!</div>';
+      html += '<div style="text-align: center; font-size: 0.9em; color: #666; margin: 10px 0;">';
+      html += 'Tap any empty square to claim it!<br>';
+      html += '<strong>Note:</strong> All <strong>?</strong> are randomly assigned at game start time';
+      html += '</div>';
     }
 
     // Admin controls
@@ -511,17 +590,37 @@ const app = {
         html += `<button class="btn btn-primary" ${!allFilled ? 'disabled' : ''} onclick="app.lockAndStartPool('${pool.id}')">Lock & Start Game</button>`;
       } else {
         html += '<div class="score-input">';
-        ['q1', 'q2', 'q3', 'q4', 'final'].forEach(quarter => {
-          const quarterName = quarter === 'final' ? 'Final' : `Q${quarter.slice(1)}`;
-          const seahawks = pool.scores?.[quarter]?.seahawks ?? '';
-          const patriots = pool.scores?.[quarter]?.patriots ?? '';
-          html += `
-            <div>
-              <h4>${quarterName}</h4>
-              <label>Seahawks: <input type="number" id="${quarter}-seahawks-${pool.id}" value="${seahawks}" min="0" onchange="app.updateScore('${pool.id}', '${quarter}')"></label>
-              <label>Patriots: <input type="number" id="${quarter}-patriots-${pool.id}" value="${patriots}" min="0" onchange="app.updateScore('${pool.id}', '${quarter}')"></label>
-            </div>
-          `;
+        html += '<h3>Score Entry & Winners</h3>';
+        
+        // Four quarters plus final
+        const periods = [
+          { key: 'q1', name: '1st Quarter' },
+          { key: 'q2', name: '2nd Quarter' },
+          { key: 'q3', name: '3rd Quarter' },
+          { key: 'q4', name: '4th Quarter' },
+          { key: 'final', name: 'Final Score' }
+        ];
+        
+        periods.forEach(period => {
+          const scoreData = pool.scores?.[period.key] || {};
+          const seahawks = scoreData.seahawks ?? '';
+          const patriots = scoreData.patriots ?? '';
+          const isConfirmed = scoreData.confirmed || false;
+          
+          html += `<div class="quarter-score-entry">`;
+          html += `<h4>${period.name}</h4>`;
+          html += `<div class="score-inputs">`;
+          html += `<label>Seahawks: <input type="number" id="${period.key}-seahawks-${pool.id}" value="${seahawks}" min="0" ${isConfirmed ? 'disabled' : ''}></label>`;
+          html += `<label>Patriots: <input type="number" id="${period.key}-patriots-${pool.id}" value="${patriots}" min="0" ${isConfirmed ? 'disabled' : ''}></label>`;
+          
+          if (!isConfirmed) {
+            html += `<button class="btn btn-primary" onclick="app.confirmScore('${pool.id}', '${period.key}')">✓ Confirm</button>`;
+          } else {
+            html += `<span class="score-confirmed">✓ Confirmed</span>`;
+            html += `<button class="btn btn-secondary" onclick="app.editScore('${pool.id}', '${period.key}')">Edit</button>`;
+          }
+          
+          html += `</div></div>`;
         });
         html += '</div>';
       }
@@ -542,14 +641,18 @@ const app = {
     html += '<div class="grid-container"><div class="football-grid">';
     html += '<div class="grid-cell header-cell corner-cell">🏈</div>';
     
+    // Top headers - Seahawks (green when locked)
     for (let col = 0; col < 10; col++) {
       const num = pool.topNumbers[col] !== null ? pool.topNumbers[col] : '?';
-      html += `<div class="grid-cell header-cell">${num}</div>`;
+      const teamClass = pool.isLocked ? ' seahawks-header' : '';
+      html += `<div class="grid-cell header-cell${teamClass}">${num}</div>`;
     }
 
     for (let row = 0; row < 10; row++) {
       const rowNum = pool.sideNumbers[row] !== null ? pool.sideNumbers[row] : '?';
-      html += `<div class="grid-cell header-cell">${rowNum}</div>`;
+      // Side headers - Patriots (red when locked)
+      const teamClass = pool.isLocked ? ' patriots-header' : '';
+      html += `<div class="grid-cell header-cell${teamClass}">${rowNum}</div>`;
       
       for (let col = 0; col < 10; col++) {
         const cell = pool.grid[row][col];
@@ -563,10 +666,13 @@ const app = {
           } else {
             cellClass += ' filled-square';
           }
-          cellContent = `${cell.firstName[0]}. ${cell.lastName}`;
+          cellContent = this.formatName(cell.firstName, cell.lastName);
           
           if (this.currentUser.isAdmin && !pool.isLocked) {
             onclick = `onclick="app.clearSquare('${pool.id}', ${row}, ${col})"`;
+          } else if (cell.userId === this.currentUser.id && !pool.isLocked) {
+            // Allow user to click own square to deselect
+            onclick = `onclick="app.selectSquare('${pool.id}', ${row}, ${col})"`;
           }
         } else {
           cellClass += ' empty-square';
@@ -612,9 +718,22 @@ const app = {
 
   async selectSquare(poolId, row, col) {
     const pool = this.pools.find(p => p.id === poolId);
-    if (!pool || pool.isLocked) return;
+    if (!pool || pool.isLocked) {
+      this.showToast('This pool is locked. No changes allowed.', 'error');
+      return;
+    }
 
-    if (pool.grid[row][col]) {
+    const cellData = pool.grid[row][col];
+    
+    // Check if user is clicking their own square to deselect it
+    if (cellData && cellData.userId === this.currentUser.id) {
+      if (confirm(`Remove your selection from this square and get ${pool.tokensPerSquare} token${pool.tokensPerSquare > 1 ? 's' : ''} refunded?`)) {
+        await this.deselectOwnSquare(poolId, row, col);
+      }
+      return;
+    }
+
+    if (cellData) {
       this.showToast('This square is already taken!', 'error');
       return;
     }
@@ -629,40 +748,138 @@ const app = {
       return;
     }
 
-    // Update grid
-    await updateSquare(poolId, row, col, {
-      userId: this.currentUser.id,
-      firstName: this.currentUser.firstName,
-      lastName: this.currentUser.lastName
-    });
+    // ATOMIC TRANSACTION: Guarantees no race condition
+    try {
+      const result = await runTransaction(db, async (transaction) => {
+        const poolRef = doc(db, 'pools', poolId);
+        const userRef = doc(db, 'users', this.currentUser.id);
+        
+        // Read current state
+        const poolDoc = await transaction.get(poolRef);
+        const userDoc = await transaction.get(userRef);
+        
+        if (!poolDoc.exists() || !userDoc.exists()) {
+          throw new Error('Document not found');
+        }
+        
+        const poolData = poolDoc.data();
+        const userData = userDoc.data();
+        
+        // Convert flat grid to 2D if needed
+        let grid = poolData.grid;
+        if (!Array.isArray(grid[0])) {
+          const grid2D = [];
+          for (let r = 0; r < 10; r++) {
+            grid2D.push(grid.slice(r * 10, (r + 1) * 10));
+          }
+          grid = grid2D;
+        }
+        
+        // Check if square is STILL available (atomic check)
+        if (grid[row][col] !== null) {
+          throw new Error('SQUARE_TAKEN');
+        }
+        
+        // Check if pool is locked
+        if (poolData.isLocked) {
+          throw new Error('POOL_LOCKED');
+        }
+        
+        // Check tokens
+        if (userData.tokens < poolData.tokensPerSquare) {
+          throw new Error('INSUFFICIENT_TOKENS');
+        }
+        
+        // Update grid
+        grid[row][col] = {
+          userId: this.currentUser.id,
+          firstName: this.currentUser.firstName,
+          lastName: this.currentUser.lastName
+        };
+        
+        // Flatten grid for storage
+        const flatGrid = [];
+        for (let r = 0; r < 10; r++) {
+          for (let c = 0; c < 10; c++) {
+            flatGrid.push(grid[r][c]);
+          }
+        }
+        
+        // Atomic writes - both succeed or both fail
+        transaction.update(poolRef, { grid: flatGrid });
+        transaction.update(userRef, {
+          tokens: userData.tokens - poolData.tokensPerSquare,
+          tokensSpent: (userData.tokensSpent || 0) + poolData.tokensPerSquare
+        });
+        
+        return {
+          newTokens: userData.tokens - poolData.tokensPerSquare,
+          tokensPerSquare: poolData.tokensPerSquare,
+          poolName: poolData.name
+        };
+      });
+      
+      // Transaction succeeded!
+      this.currentUser.tokens = result.newTokens;
+      this.currentUser.tokensSpent = (this.currentUser.tokensSpent || 0) + result.tokensPerSquare;
+      document.getElementById('userTokens').textContent = result.newTokens;
 
-    // Update user tokens
-    const newTokens = this.currentUser.tokens - pool.tokensPerSquare;
-    const newTokensSpent = (this.currentUser.tokensSpent || 0) + pool.tokensPerSquare;
+      const tokensBefore = result.newTokens + result.tokensPerSquare;
+      await this.logActivity(
+        'Square Selected',
+        `Selected square (${row}, ${col}) in ${result.poolName} for ${result.tokensPerSquare} token(s). Tokens: ${tokensBefore} → ${result.newTokens}`
+      );
+
+      // Real-time listener will update the grid
+      this.showToast(`Square selected! You spent ${result.tokensPerSquare} token${result.tokensPerSquare > 1 ? 's' : ''}. ${result.newTokens} remaining.`, 'success');
+
+      if (result.newTokens === 1) {
+        setTimeout(() => {
+          this.showToast('⚠️ Warning: You only have 1 token remaining!', 'warning', 5000);
+        }, 500);
+      }
+      
+    } catch (error) {
+      console.error('Transaction failed:', error);
+      
+      if (error.message === 'SQUARE_TAKEN') {
+        this.showToast('Someone just claimed this square! Please choose another.', 'error');
+      } else if (error.message === 'POOL_LOCKED') {
+        this.showToast('This pool was just locked. No changes allowed.', 'error');
+      } else if (error.message === 'INSUFFICIENT_TOKENS') {
+        this.showToast('Not enough tokens!', 'error');
+      } else {
+        this.showToast('Failed to select square. Please try again.', 'error');
+      }
+    }
+  },
+
+  async deselectOwnSquare(poolId, row, col) {
+    const pool = this.pools.find(p => p.id === poolId);
+    
+    // Clear the square
+    await updateSquare(poolId, row, col, null);
+    
+    // Refund tokens
+    const newTokens = this.currentUser.tokens + pool.tokensPerSquare;
+    const newTokensSpent = (this.currentUser.tokensSpent || 0) - pool.tokensPerSquare;
     await dbUpdateUser(this.currentUser.id, {
       tokens: newTokens,
       tokensSpent: newTokensSpent
     });
-
+    
+    const tokensBefore = this.currentUser.tokens;
     this.currentUser.tokens = newTokens;
     this.currentUser.tokensSpent = newTokensSpent;
     document.getElementById('userTokens').textContent = newTokens;
-
+    
     await this.logActivity(
-      'Square Selected',
-      `Selected square (${row}, ${col}) in ${pool.name} for ${pool.tokensPerSquare} token(s)`
+      'Square Deselected',
+      `Removed own selection from square (${row}, ${col}) in ${pool.name}. ${pool.tokensPerSquare} token(s) refunded. Tokens: ${tokensBefore} → ${newTokens}`
     );
-
-    await this.loadData();
-    this.renderPoolView(this.pools.find(p => p.id === poolId));
-
-    this.showToast(`Square selected! You spent ${pool.tokensPerSquare} token${pool.tokensPerSquare > 1 ? 's' : ''}. ${newTokens} remaining.`, 'success');
-
-    if (newTokens === 1) {
-      setTimeout(() => {
-        this.showToast('⚠️ Warning: You only have 1 token remaining!', 'warning', 5000);
-      }, 500);
-    }
+    
+    // Don't reload - real-time listener will update
+    this.showToast(`Square removed! ${pool.tokensPerSquare} token${pool.tokensPerSquare > 1 ? 's' : ''} refunded. You now have ${newTokens} tokens.`, 'success');
   },
 
   async clearSquare(poolId, row, col) {
@@ -674,22 +891,31 @@ const app = {
     if (cellData) {
       const user = this.users.find(u => u.id === cellData.userId);
       if (user) {
+        const tokensBefore = user.tokens;
+        const tokensAfter = user.tokens + pool.tokensPerSquare;
+        
         await dbUpdateUser(user.id, {
-          tokens: user.tokens + pool.tokensPerSquare,
+          tokens: tokensAfter,
           tokensSpent: (user.tokensSpent || 0) - pool.tokensPerSquare
         });
+        
+        await this.logActivity(
+          'Square Cleared by Admin',
+          `Removed ${this.formatName(cellData.firstName, cellData.lastName)} from square (${row}, ${col}) in ${pool.name}. ${pool.tokensPerSquare} token(s) refunded. Tokens: ${tokensBefore} → ${tokensAfter}`,
+          cellData.userId
+        );
+      } else {
+        await this.logActivity(
+          'Square Cleared by Admin',
+          `Removed square (${row}, ${col}) in ${pool.name}. User not found.`
+        );
       }
-      
-      await this.logActivity(
-        'Square Cleared by Admin',
-        `Removed ${cellData.firstName} ${cellData.lastName} from square (${row}, ${col}) in ${pool.name}. ${pool.tokensPerSquare} token(s) refunded.`
-      );
       
       await updateSquare(poolId, row, col, null);
       await this.loadData();
       this.renderPoolView(this.pools.find(p => p.id === poolId));
       
-      this.showToast(`Square cleared. ${pool.tokensPerSquare} token${pool.tokensPerSquare > 1 ? 's' : ''} refunded to ${cellData.firstName} ${cellData.lastName}.`, 'info');
+      this.showToast(`Square cleared. ${pool.tokensPerSquare} token${pool.tokensPerSquare > 1 ? 's' : ''} refunded to ${this.formatName(cellData.firstName, cellData.lastName)}.`, 'info');
     }
   },
 
@@ -760,30 +986,78 @@ const app = {
     this.showToast('Game started! Numbers revealed!', 'success');
   },
 
-  async updateScore(poolId, quarter) {
-    const seahawks = parseInt(document.getElementById(`${quarter}-seahawks-${poolId}`).value) || 0;
-    const patriots = parseInt(document.getElementById(`${quarter}-patriots-${poolId}`).value) || 0;
+  async confirmScore(poolId, quarter) {
+    const seahawksScore = parseInt(document.getElementById(`${quarter}-seahawks-${poolId}`).value);
+    const patriotsScore = parseInt(document.getElementById(`${quarter}-patriots-${poolId}`).value);
+    
+    if (isNaN(seahawksScore) || isNaN(patriotsScore)) {
+      this.showToast('Please enter valid scores for both teams', 'error');
+      return;
+    }
+    
+    const quarterNames = { 
+      q1: '1st Quarter', 
+      q2: '2nd Quarter', 
+      q3: '3rd Quarter', 
+      q4: '4th Quarter',
+      final: 'Final Score'
+    };
+    
+    if (!confirm(`Confirm ${quarterNames[quarter]} scores?\n\nSeahawks: ${seahawksScore}\nPatriots: ${patriotsScore}\n\nThis will determine the winner for this period.`)) {
+      return;
+    }
+    
+    await this.updateScore(poolId, quarter, seahawksScore, patriotsScore, true);
+  },
 
-    if (seahawks < 0 || patriots < 0) {
+  async editScore(poolId, quarter) {
+    if (!confirm('Edit this quarter\'s score? This will recalculate the winner.')) {
+      return;
+    }
+    
+    const pool = this.pools.find(p => p.id === poolId);
+    const scores = { ...pool.scores };
+    scores[quarter] = { ...scores[quarter], confirmed: false };
+    
+    await dbUpdatePool(poolId, { scores });
+    
+    // Don't reload - real-time listener will update
+    this.showToast('Score unlocked for editing', 'info');
+  },
+
+  async updateScore(poolId, quarter, seahawksScore, patriotsScore, confirmed = true) {
+    if (seahawksScore < 0 || patriotsScore < 0) {
       this.showToast('Scores must be non-negative', 'error');
       return;
     }
 
     const pool = this.pools.find(p => p.id === poolId);
-    const seahawksDigit = seahawks % 10;
-    const patriotsDigit = patriots % 10;
+    const seahawksDigit = seahawksScore % 10;
+    const patriotsDigit = patriotsScore % 10;
 
     const colIdx = pool.topNumbers.indexOf(seahawksDigit);
     const rowIdx = pool.sideNumbers.indexOf(patriotsDigit);
 
     let winner = null;
-    if (pool.grid[rowIdx] && pool.grid[rowIdx][colIdx]) {
-      const cell = pool.grid[rowIdx][colIdx];
-      winner = `${cell.firstName} ${cell.lastName}`;
+    let winnerCell = null;
+    if (rowIdx >= 0 && colIdx >= 0 && pool.grid[rowIdx] && pool.grid[rowIdx][colIdx]) {
+      winnerCell = pool.grid[rowIdx][colIdx];
+      winner = this.formatName(winnerCell.firstName, winnerCell.lastName);
     }
 
-    const updatedScores = { ...pool.scores, [quarter]: { seahawks, patriots } };
-    const updatedWinners = { ...pool.winningSquares, [quarter]: { row: rowIdx, col: colIdx, winner } };
+    const updatedScores = { 
+      ...pool.scores, 
+      [quarter]: { 
+        seahawks: seahawksScore, 
+        patriots: patriotsScore,
+        confirmed: confirmed
+      } 
+    };
+    
+    const updatedWinners = { ...pool.winningSquares };
+    if (winner) {
+      updatedWinners[quarter] = { row: rowIdx, col: colIdx, winner };
+    }
 
     await dbUpdatePool(poolId, {
       scores: updatedScores,
@@ -791,13 +1065,16 @@ const app = {
     });
 
     await this.logActivity(
-      'Winner Determined',
-      `${quarter.toUpperCase()}: Seahawks ${seahawks}, Patriots ${patriots} → Winner: ${winner || 'None'}`
+      'Score Updated',
+      `${quarter.toUpperCase()}: Seahawks ${seahawksScore}, Patriots ${patriotsScore} → Winner: ${winner || 'None'}`
     );
 
-    await this.loadData();
-    this.renderPoolView(this.pools.find(p => p.id === poolId));
-    this.showToast(`Score updated! Winner: ${winner || 'None'}`, 'success');
+    // Don't reload - real-time listener will update
+    if (winner) {
+      this.showToast(`${quarter.toUpperCase()} winner: ${winner}!`, 'success', 5000);
+    } else {
+      this.showToast('Score updated. No winner for this combination.', 'info');
+    }
   },
 
   // Continue with remaining methods...
@@ -851,6 +1128,9 @@ const app = {
       return;
     }
 
+    const tokensBefore = user.tokens;
+    const tokensAfter = user.tokens - pool.tokensPerSquare;
+
     await updateSquare(poolId, row, col, {
       userId: user.id,
       firstName: user.firstName,
@@ -858,13 +1138,14 @@ const app = {
     });
 
     await dbUpdateUser(user.id, {
-      tokens: user.tokens - pool.tokensPerSquare,
+      tokens: tokensAfter,
       tokensSpent: (user.tokensSpent || 0) + pool.tokensPerSquare
     });
 
     await this.logActivity(
       'Square Assigned by Admin',
-      `Admin assigned square (${row}, ${col}) in ${pool.name} to ${user.firstName} ${user.lastName} for ${pool.tokensPerSquare} token(s)`
+      `Admin assigned square (${row}, ${col}) in ${pool.name} to ${this.formatName(user.firstName, user.lastName)} for ${pool.tokensPerSquare} token(s). Tokens: ${tokensBefore} → ${tokensAfter}`,
+      user.id
     );
 
     await this.loadData();
@@ -908,7 +1189,8 @@ const app = {
 
     await this.logActivity(
       'Tokens Updated by Admin',
-      `Admin changed ${this.users[userIndex].firstName} ${this.users[userIndex].lastName}'s tokens from ${oldTokens} to ${newTokens}`
+      `Admin changed ${this.formatName(this.users[userIndex].firstName, this.users[userIndex].lastName)}'s tokens. Tokens: ${oldTokens} → ${newTokens}`,
+      userId
     );
 
     if (this.currentUser.id === userId) {
@@ -917,7 +1199,7 @@ const app = {
     }
 
     await this.loadData();
-    this.showToast(`Tokens updated for ${this.users[userIndex].firstName} ${this.users[userIndex].lastName}!`, 'success');
+    this.showToast(`Tokens updated for ${this.formatName(this.users[userIndex].firstName, this.users[userIndex].lastName)}!`, 'success');
   },
 
   showEditStartTimeModal(poolId) {
@@ -1114,82 +1396,133 @@ const app = {
     errorEl.textContent = '';
     successEl.textContent = '';
     
-    const emptySquares = [];
-    pool.grid.forEach((row, rowIdx) => {
-      row.forEach((cell, colIdx) => {
-        if (cell === null) {
-          emptySquares.push({ row: rowIdx, col: colIdx });
+    // ATOMIC TRANSACTION for random selection
+    try {
+      const result = await runTransaction(db, async (transaction) => {
+        const poolRef = doc(db, 'pools', poolId);
+        const userRef = doc(db, 'users', targetUser.id);
+        
+        // Read current state
+        const poolDoc = await transaction.get(poolRef);
+        const userDoc = await transaction.get(userRef);
+        
+        if (!poolDoc.exists() || !userDoc.exists()) {
+          throw new Error('Document not found');
         }
+        
+        const poolData = poolDoc.data();
+        const userData = userDoc.data();
+        
+        // Convert flat grid to 2D if needed
+        let grid = poolData.grid;
+        if (!Array.isArray(grid[0])) {
+          const grid2D = [];
+          for (let r = 0; r < 10; r++) {
+            grid2D.push(grid.slice(r * 10, (r + 1) * 10));
+          }
+          grid = grid2D;
+        }
+        
+        // Find empty squares atomically
+        const emptySquares = [];
+        grid.forEach((row, rowIdx) => {
+          row.forEach((cell, colIdx) => {
+            if (cell === null) {
+              emptySquares.push({ row: rowIdx, col: colIdx });
+            }
+          });
+        });
+        
+        if (emptySquares.length < count) {
+          throw new Error(`INSUFFICIENT_SQUARES:${emptySquares.length}`);
+        }
+        
+        const totalCost = count * poolData.tokensPerSquare;
+        if (userData.tokens < totalCost) {
+          throw new Error('INSUFFICIENT_TOKENS');
+        }
+        
+        // Randomly select squares
+        const selectedSquares = [];
+        for (let i = 0; i < count; i++) {
+          const randomIndex = Math.floor(Math.random() * emptySquares.length);
+          const square = emptySquares.splice(randomIndex, 1)[0];
+          selectedSquares.push(square);
+          
+          grid[square.row][square.col] = {
+            userId: targetUser.id,
+            firstName: targetUser.firstName,
+            lastName: targetUser.lastName
+          };
+        }
+        
+        // Flatten grid for storage
+        const flatGrid = [];
+        for (let r = 0; r < 10; r++) {
+          for (let c = 0; c < 10; c++) {
+            flatGrid.push(grid[r][c]);
+          }
+        }
+        
+        // Atomic writes
+        transaction.update(poolRef, { grid: flatGrid });
+        transaction.update(userRef, {
+          tokens: userData.tokens - totalCost,
+          tokensSpent: (userData.tokensSpent || 0) + totalCost
+        });
+        
+        return {
+          selectedSquares,
+          totalCost,
+          newTokens: userData.tokens - totalCost,
+          poolName: poolData.name
+        };
       });
-    });
-    
-    if (emptySquares.length < count) {
-      errorEl.textContent = 'Not enough empty squares available!';
-      return;
-    }
-    
-    const totalCost = count * pool.tokensPerSquare;
-    if (targetUser.tokens < totalCost) {
-      errorEl.textContent = 'Not enough tokens!';
-      return;
-    }
-    
-    const selectedSquares = [];
-    const squareUpdates = [];
-    
-    for (let i = 0; i < count; i++) {
-      const randomIndex = Math.floor(Math.random() * emptySquares.length);
-      const square = emptySquares.splice(randomIndex, 1)[0];
-      selectedSquares.push(square);
       
-      squareUpdates.push({
-        row: square.row,
-        col: square.col,
-        cellData: {
-          userId: targetUser.id,
-          firstName: targetUser.firstName,
-          lastName: targetUser.lastName
-        }
-      });
-    }
-    
-    await updateMultipleSquares(poolId, squareUpdates);
-    
-    await dbUpdateUser(targetUser.id, {
-      tokens: targetUser.tokens - totalCost,
-      tokensSpent: (targetUser.tokensSpent || 0) + totalCost
-    });
-    
-    if (targetUser.id === this.currentUser.id) {
-      this.currentUser.tokens -= totalCost;
-      this.currentUser.tokensSpent = (this.currentUser.tokensSpent || 0) + totalCost;
-      document.getElementById('userTokens').textContent = this.currentUser.tokens;
-    }
-    
-    const squaresList = selectedSquares.map(s => `(${s.row},${s.col})`).join(', ');
-    if (isAdmin) {
-      await this.logActivity(
-        'Random Assignment by Admin',
-        `Admin randomly assigned ${count} square${count !== 1 ? 's' : ''} to ${targetUser.firstName} ${targetUser.lastName} in ${pool.name}: ${squaresList}. Cost: ${totalCost} token${totalCost !== 1 ? 's' : ''}`
-      );
-    } else {
-      await this.logActivity(
-        'Random Square Selection',
-        `User randomly selected ${count} square${count !== 1 ? 's' : ''} in ${pool.name}: ${squaresList}. Cost: ${totalCost} token${totalCost !== 1 ? 's' : ''}`
-      );
-    }
-    
-    await this.loadData();
-    this.closeModal('randomSelectModal');
-    this.pendingRandomSelection = null;
-    this.renderPoolView(this.pools.find(p => p.id === poolId));
-    
-    this.showToast(`${count} square${count !== 1 ? 's' : ''} randomly selected! ${totalCost} token${totalCost !== 1 ? 's' : ''} spent.`, 'success');
-    
-    if (targetUser.id === this.currentUser.id && this.currentUser.tokens === 1) {
-      setTimeout(() => {
-        this.showToast('⚠️ Warning: You only have 1 token remaining!', 'warning', 5000);
-      }, 500);
+      // Transaction succeeded!
+      const tokensBefore = targetUser.tokens;
+      if (targetUser.id === this.currentUser.id) {
+        this.currentUser.tokens = result.newTokens;
+        this.currentUser.tokensSpent = (this.currentUser.tokensSpent || 0) + result.totalCost;
+        document.getElementById('userTokens').textContent = result.newTokens;
+      }
+      
+      const squaresList = result.selectedSquares.map(s => `(${s.row},${s.col})`).join(', ');
+      if (isAdmin) {
+        await this.logActivity(
+          'Random Assignment by Admin',
+          `Admin randomly assigned ${count} square${count !== 1 ? 's' : ''} to ${this.formatName(targetUser.firstName, targetUser.lastName)} in ${result.poolName}: ${squaresList}. Cost: ${result.totalCost} token${result.totalCost !== 1 ? 's' : ''}. Tokens: ${tokensBefore} → ${result.newTokens}`,
+          targetUser.id
+        );
+      } else {
+        await this.logActivity(
+          'Random Square Selection',
+          `User randomly selected ${count} square${count !== 1 ? 's' : ''} in ${result.poolName}: ${squaresList}. Cost: ${result.totalCost} token${result.totalCost !== 1 ? 's' : ''}. Tokens: ${tokensBefore} → ${result.newTokens}`
+        );
+      }
+      
+      this.closeModal('randomSelectModal');
+      this.pendingRandomSelection = null;
+      
+      this.showToast(`${count} square${count !== 1 ? 's' : ''} randomly selected! ${result.totalCost} token${result.totalCost !== 1 ? 's' : ''} spent.`, 'success');
+      
+      if (targetUser.id === this.currentUser.id && result.newTokens === 1) {
+        setTimeout(() => {
+          this.showToast('⚠️ Warning: You only have 1 token remaining!', 'warning', 5000);
+        }, 500);
+      }
+      
+    } catch (error) {
+      console.error('Random selection transaction failed:', error);
+      
+      if (error.message.startsWith('INSUFFICIENT_SQUARES:')) {
+        const available = error.message.split(':')[1];
+        errorEl.textContent = `Only ${available} squares available now. Someone just selected squares!`;
+      } else if (error.message === 'INSUFFICIENT_TOKENS') {
+        errorEl.textContent = 'Not enough tokens!';
+      } else {
+        errorEl.textContent = 'Failed to select squares. Please try again.';
+      }
     }
   },
 
@@ -1300,6 +1633,45 @@ const app = {
     } else {
       html += '<p>You haven\'t joined any games yet!</p>';
     }
+
+    // Personal Activity History
+    html += '<div class="my-activity-section">';
+    html += '<h3>My Recent Activity</h3>';
+    
+    // Filter activities for this user (actions by them or affecting them)
+    const myActivities = this.activityLog.filter(entry => 
+      entry.userId === this.currentUser.id || entry.targetUserId === this.currentUser.id
+    ).slice(0, 50); // Limit to 50 most recent
+
+    if (myActivities.length > 0) {
+      html += '<div class="activity-list">';
+      myActivities.forEach(entry => {
+        const timestamp = entry.timestamp && entry.timestamp.toDate 
+          ? entry.timestamp.toDate() 
+          : new Date(entry.timestamp);
+        const timeStr = timestamp.toLocaleString();
+        
+        // Highlight admin actions affecting this user
+        const isAdminAction = entry.targetUserId === this.currentUser.id && entry.userId !== this.currentUser.id;
+        const entryClass = isAdminAction ? 'activity-entry admin-action' : 'activity-entry';
+        
+        html += `<div class="${entryClass}">`;
+        html += `<div class="activity-header">`;
+        html += `<span class="activity-action">${entry.action}</span>`;
+        html += `<span class="activity-time">${timeStr}</span>`;
+        html += `</div>`;
+        html += `<div class="activity-details">${entry.details}</div>`;
+        if (isAdminAction) {
+          html += `<div class="admin-badge">👤 Admin Action</div>`;
+        }
+        html += `</div>`;
+      });
+      html += '</div>';
+    } else {
+      html += '<p style="color: #666;">No activity yet.</p>';
+    }
+    
+    html += '</div>';
 
     container.innerHTML = html;
   },
@@ -1495,6 +1867,10 @@ const app = {
     document.getElementById('resetPasswordModal').classList.add('active');
   },
 
+  showInstructions() {
+    document.getElementById('instructionsModal').classList.add('active');
+  },
+
   async requestPasswordReset() {
     const email = document.getElementById('resetEmail').value.trim().toLowerCase();
     const errorEl = document.getElementById('resetError');
@@ -1534,10 +1910,15 @@ const app = {
 
       successEl.textContent = '✅ Password reset email sent! Check your inbox (and spam folder). Link expires in 1 hour.';
       
-      await this.logActivity(
-        'Password Reset Requested',
-        `Password reset email sent to ${email}`
-      );
+      // Log successful password reset request (unauthenticated)
+      await addActivityLog({
+        user: 'Unauthenticated User',
+        userId: null,
+        isAdmin: false,
+        action: 'Password Reset Requested',
+        details: `Password reset email sent to ${email}`,
+        email: email // Track which email requested reset
+      });
 
       // Clear form
       document.getElementById('resetEmail').value = '';
@@ -1550,15 +1931,65 @@ const app = {
     } catch (error) {
       console.error('Password reset error:', error);
       
+      // Log failed password reset attempts
+      let failureReason = 'Unknown error';
+      
       if (error.code === 'auth/user-not-found') {
         // Don't reveal if user exists (security best practice)
         successEl.textContent = '✅ If an account exists with that email, a reset link has been sent.';
+        failureReason = 'User not found';
+        
+        // Log attempt for non-existent user (security tracking)
+        await addActivityLog({
+          user: 'Unauthenticated User',
+          userId: null,
+          isAdmin: false,
+          action: 'Password Reset Failed',
+          details: `Password reset attempted for non-existent email: ${email}`,
+          email: email
+        });
+        
       } else if (error.code === 'auth/invalid-email') {
         errorEl.textContent = 'Invalid email address';
+        failureReason = 'Invalid email format';
+        
+        // Log invalid email attempt
+        await addActivityLog({
+          user: 'Unauthenticated User',
+          userId: null,
+          isAdmin: false,
+          action: 'Password Reset Failed',
+          details: `Invalid email format attempted: ${email}`,
+          email: email
+        });
+        
       } else if (error.code === 'auth/too-many-requests') {
         errorEl.textContent = 'Too many requests from this device. Please try again later.';
+        failureReason = 'Rate limited by Firebase';
+        
+        // Log rate limit hit
+        await addActivityLog({
+          user: 'Unauthenticated User',
+          userId: null,
+          isAdmin: false,
+          action: 'Password Reset Failed',
+          details: `Rate limit exceeded for email: ${email}`,
+          email: email
+        });
+        
       } else {
         errorEl.textContent = 'An error occurred. Please try again.';
+        failureReason = error.message || 'Unknown error';
+        
+        // Log other errors
+        await addActivityLog({
+          user: 'Unauthenticated User',
+          userId: null,
+          isAdmin: false,
+          action: 'Password Reset Failed',
+          details: `Password reset error for ${email}: ${failureReason}`,
+          email: email
+        });
       }
     }
   },
@@ -1620,6 +2051,21 @@ const app = {
       // Expand
       container.classList.add('expanded');
       button.textContent = '🔍 Collapse Grid';
+    }
+  },
+
+  togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    const button = input.nextElementSibling;
+    
+    if (input.type === 'password') {
+      input.type = 'text';
+      if (button) button.textContent = '🙈';
+    } else {
+      input.type = 'password';
+      if (button) button.textContent = '👁️';
     }
   }
 };

@@ -438,6 +438,17 @@
             font-size: 0.75em;
         }
 
+        /* Team-colored headers when game is locked */
+        .header-cell.seahawks-header {
+            background: #2d5a3d; /* Seahawks green */
+            color: white;
+        }
+
+        .header-cell.patriots-header {
+            background: #c62828; /* Patriots red */
+            color: white;
+        }
+
         @media (min-width: 480px) {
             .header-cell {
                 font-size: 0.85em;
@@ -1032,4 +1043,211 @@
 
         .toast-close:hover {
             opacity: 1;
+        }
+
+        /* Password visibility toggle */
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 5px;
+            line-height: 1;
+            z-index: 1;
+        }
+
+        .password-toggle:hover {
+            opacity: 0.7;
+        }
+
+        /* Mobile matchup improvements */
+        @media (max-width: 600px) {
+            .matchup {
+                flex-direction: column;
+                text-align: center;
+                font-size: 1em;
+                gap: 10px;
+            }
+            
+            .matchup h2 {
+                font-size: 1.2em;
+                margin: 5px 0;
+            }
+            
+            .matchup span {
+                font-size: 0.9em;
+            }
+        }
+
+        /* Score entry styles */
+        .quarter-score-entry {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .quarter-score-entry h4 {
+            margin-top: 0;
+        }
+
+        .score-inputs {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .score-inputs label {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .score-inputs input {
+            width: 100px;
+        }
+
+        .score-confirmed {
+            color: #28a745;
+            font-weight: bold;
+            padding: 8px 12px;
+        }
+
+        @media (max-width: 600px) {
+            .score-inputs {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .score-inputs input {
+                width: 100%;
+            }
+        }
+
+        /* Instructions Modal */
+        .instructions-section {
+            margin: 25px 0;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .instructions-section:last-of-type {
+            border-bottom: none;
+        }
+
+        .instructions-section h3 {
+            color: #2d5a3d;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .instructions-section p {
+            line-height: 1.6;
+            margin: 10px 0;
+        }
+
+        .instructions-section ul,
+        .instructions-section ol {
+            line-height: 1.8;
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+
+        .instructions-section li {
+            margin: 8px 0;
+        }
+
+        .grid-example {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        #instructionsModal .modal-content {
+            padding: 30px;
+        }
+
+        #instructionsModal h2 {
+            color: #2d5a3d;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+        }
+
+        /* Personal Activity Section in Profile */
+        .my-activity-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .my-activity-section h3 {
+            color: #2d5a3d;
+            margin-bottom: 15px;
+        }
+
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .activity-entry {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            border-radius: 6px;
+            border-left: 3px solid #2d5a3d;
+        }
+
+        .activity-entry.admin-action {
+            background: #fff3cd;
+            border-left: 3px solid #ffc107;
+        }
+
+        .activity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .activity-action {
+            font-weight: bold;
+            color: #2d5a3d;
+        }
+
+        .activity-entry.admin-action .activity-action {
+            color: #856404;
+        }
+
+        .activity-time {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .activity-details {
+            font-size: 0.95em;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        .admin-badge {
+            margin-top: 6px;
+            font-size: 0.85em;
+            color: #856404;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .activity-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
         }
