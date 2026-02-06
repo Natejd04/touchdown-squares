@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Touchdown Squares - Football Pool</title>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+    <div id="toastContainer"></div>
+    <div class="container">
+        <div class="header">
+            <h1>🏈 TOUCHDOWN SQUARES 🏈</h1>
+            <div class="matchup">
+                <svg class="team-logo" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="#002244" stroke="#69BE28" stroke-width="3"/>
+                    <path d="M30,35 Q50,25 70,35 L70,65 Q50,75 30,65 Z" fill="#69BE28"/>
+                    <circle cx="50" cy="50" r="15" fill="#A5ACAF"/>
+                    <text x="50" y="58" text-anchor="middle" font-size="20" fill="#002244" font-weight="bold">12</text>
+                </svg>
+                <span style="color: #69BE28; font-weight: bold;">SEAHAWKS</span>
+                <span style="color: #ffd700;">vs</span>
+                <span style="color: #C60C30; font-weight: bold;">PATRIOTS</span>
+                <svg class="team-logo" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="#002244" stroke="#C60C30" stroke-width="3"/>
+                    <path d="M35,40 L45,30 L55,40 L60,35 L65,45 L70,40 L65,60 L35,60 Z" fill="#C60C30"/>
+                    <circle cx="45" cy="45" r="3" fill="white"/>
+                    <polygon points="50,50 55,55 50,65 45,55" fill="white"/>
+                </svg>
+            </div>
+            <p class="tagline">Go Hawks! Show those deflated Patriots how real champions play! 🦅💚</p>
+        </div>
+
+        <div id="authSection" class="auth-section">
+            <div class="tabs">
+                <button class="tab active" onclick="app.switchTab('login')">Login</button>
+                <button class="tab" onclick="app.switchTab('signup')">Sign Up</button>
+            </div>
+
+            <div id="loginForm">
+                <h2>Login</h2>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="loginEmail" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="loginPassword" placeholder="Password">
+                </div>
+                <div id="loginError" class="error"></div>
+                <button class="btn btn-primary" onclick="app.login()">Login</button>
+                <p style="margin-top: 15px; text-align: center;">
+                    <a href="#" onclick="app.showResetPasswordModal(); return false;" style="color: #2d5a3d;">Forgot Password?</a>
+                </p>
+                <p style="margin-top: 15px; text-align: center;">
+                    <a href="#" onclick="app.browseAsGuest(); return false;" style="color: #2d5a3d; font-weight: bold;">Browse as Guest (View Only)</a>
+                </p>
+            </div>
+
+            <div id="signupForm" class="hidden">
+                <h2>Sign Up</h2>
+                <div class="form-group">
+                    <label>First Name:</label>
+                    <input type="text" id="signupFirstName" placeholder="First Name">
+                </div>
+                <div class="form-group">
+                    <label>Last Name:</label>
+                    <input type="text" id="signupLastName" placeholder="Last Name">
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="signupEmail" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="signupPassword" placeholder="Password (min 6 characters)">
+                </div>
+                <div id="signupError" class="error"></div>
+                <div id="signupSuccess" class="success"></div>
+                <button class="btn btn-primary" onclick="app.signup()">Sign Up</button>
+            </div>
+        </div>
+
+        <div id="mainContent" class="main-content hidden">
+            <div id="guestBanner" class="guest-banner hidden">
+                👁️ You are browsing as a guest. <a onclick="app.exitGuestMode()">Login or Sign Up</a> to select squares and join the fun!
+            </div>
+
+            <div class="user-info">
+                <div>
+                    <strong>Welcome, <span id="userName"></span>!</strong>
+                    <div class="token-display">💰 Tokens: <span id="userTokens">0</span></div>
+                </div>
+                <button class="btn btn-secondary" onclick="app.logout()">Logout</button>
+            </div>
+
+            <div class="nav-menu">
+                <button class="nav-btn active" onclick="app.showSection('pools')">Football Pools</button>
+                <button class="nav-btn" id="profileNavBtn" onclick="app.showSection('profile')">My Profile</button>
+                <button class="nav-btn" id="activityNavBtn" style="display: none;" onclick="app.showSection('activity')">Activity Log</button>
+            </div>
+
+            <div id="adminPanel" class="hidden">
+                <div class="admin-controls">
+                    <h3>🔧 Admin Controls</h3>
+                    <button class="btn btn-primary" onclick="app.showCreatePoolModal()">Create New Pool</button>
+                    <button class="btn btn-secondary" onclick="app.showManageUsersModal()">Manage User Tokens</button>
+                    <button class="btn btn-secondary" onclick="app.exportData()">💾 Export Data</button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📥 Import Data</button>
+                    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="app.importData(this.files[0])">
+                </div>
+            </div>
+
+            <div id="poolsSection">
+                <div id="poolsList">
+                    <h2>Available Football Pools</h2>
+                    <div class="pools-list" id="poolsContainer"></div>
+                </div>
+
+                <div id="poolView" class="hidden">
+                    <button class="btn btn-secondary" onclick="app.backToPoolsList()">← Back to Pools</button>
+                    <div id="poolDetails"></div>
+                </div>
+            </div>
+
+            <div id="profileSection" class="hidden">
+                <h2>My Profile</h2>
+                <div class="profile-section" id="profileContent"></div>
+            </div>
+
+            <div id="activitySection" class="hidden">
+                <h2>Activity Log</h2>
+                <div class="profile-section">
+                    <div class="activity-filters">
+                        <h3>Filters</h3>
+                        <div class="filter-row">
+                            <div class="form-group">
+                                <label>User:</label>
+                                <select id="filterUser">
+                                    <option value="">All Users</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Action:</label>
+                                <select id="filterAction">
+                                    <option value="">All Actions</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>From Date:</label>
+                                <input type="date" id="filterFromDate">
+                            </div>
+                            <div class="form-group">
+                                <label>To Date:</label>
+                                <input type="date" id="filterToDate">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="app.applyActivityFilters()">Apply Filters</button>
+                        <button class="btn btn-secondary" onclick="app.clearActivityFilters()">Clear Filters</button>
+                    </div>
+                    <div class="activity-log" id="activityLog"></div>
+                    <div class="pagination" id="activityPagination"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="createPoolModal" class="modal">
+        <div class="modal-content">
+            <h2>Create New Pool</h2>
+            <div class="form-group">
+                <label>Pool Name:</label>
+                <input type="text" id="newPoolName" placeholder="e.g., Super Bowl Squares">
+            </div>
+            <div class="form-group">
+                <label>Tokens per Square:</label>
+                <input type="number" id="newPoolTokens" value="1" min="1">
+            </div>
+            <div class="form-group">
+                <label>Estimated Start Time:</label>
+                <input type="datetime-local" id="newPoolStartTime">
+            </div>
+            <div id="createPoolError" class="error"></div>
+            <button class="btn btn-primary" onclick="app.createPool()">Create Pool</button>
+            <button class="btn btn-secondary" onclick="app.closeModal('createPoolModal')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="manageUsersModal" class="modal">
+        <div class="modal-content">
+            <h2>Manage User Tokens</h2>
+            <div id="usersList"></div>
+            <button class="btn btn-secondary" onclick="app.closeModal('manageUsersModal')">Close</button>
+        </div>
+    </div>
+
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content">
+            <h2>Change Password Required</h2>
+            <p>Please change your password from the default.</p>
+            <div class="form-group">
+                <label>New Password:</label>
+                <input type="password" id="newPassword" placeholder="New Password (min 6 characters)">
+            </div>
+            <div class="form-group">
+                <label>Confirm Password:</label>
+                <input type="password" id="confirmPassword" placeholder="Confirm Password">
+            </div>
+            <div id="changePasswordError" class="error"></div>
+            <button class="btn btn-primary" onclick="app.changePassword()">Change Password</button>
+        </div>
+    </div>
+
+    <div id="resetPasswordModal" class="modal">
+        <div class="modal-content">
+            <h2>Reset Password</h2>
+            <p>Enter your email to receive a password reset link (valid for 15 minutes).</p>
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="resetEmail" placeholder="your@email.com">
+            </div>
+            <div id="resetError" class="error"></div>
+            <div id="resetSuccess" class="success"></div>
+            <button class="btn btn-primary" onclick="app.requestPasswordReset()">Send Reset Link</button>
+            <button class="btn btn-secondary" onclick="app.closeModal('resetPasswordModal')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="assignSquareModal" class="modal">
+        <div class="modal-content">
+            <h2>Assign Square to User</h2>
+            <div class="form-group">
+                <label>Select User:</label>
+                <select id="assignSquareUser"></select>
+            </div>
+            <div id="assignSquareError" class="error"></div>
+            <button class="btn btn-primary" onclick="app.confirmAssignSquare()">Assign Square</button>
+            <button class="btn btn-secondary" onclick="app.closeModal('assignSquareModal')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="editStartTimeModal" class="modal">
+        <div class="modal-content">
+            <h2>Edit Start Time</h2>
+            <div class="form-group">
+                <label>Start Time:</label>
+                <input type="datetime-local" id="editStartTime">
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="removeStartTime"> Remove start time (hide countdown)
+                </label>
+            </div>
+            <div id="editStartTimeError" class="error"></div>
+            <button class="btn btn-primary" onclick="app.confirmEditStartTime()">Save Changes</button>
+            <button class="btn btn-secondary" onclick="app.closeModal('editStartTimeModal')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="randomSelectModal" class="modal">
+        <div class="modal-content">
+            <h2>🎲 Random Square Selection</h2>
+            <div id="randomSelectContent"></div>
+            <div id="randomSelectError" class="error"></div>
+            <div id="randomSelectSuccess" class="success"></div>
+            <button class="btn btn-primary" id="randomSelectConfirmBtn" onclick="app.confirmRandomSelection()">Select Randomly</button>
+            <button class="btn btn-secondary" onclick="app.closeModal('randomSelectModal')">Cancel</button>
+        </div>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+</body>
+</html>

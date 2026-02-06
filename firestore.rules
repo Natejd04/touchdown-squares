@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return isSignedIn() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // Helper function to check if user is accessing their own data
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    // ============= USERS =============
+    match /users/{userId} {
+      // Anyone can read their own user doc, admins can read all
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Only admins can create users (signup handled by Cloud Function or client with special permissions)
+      // In practice, allow create for authenticated users (signup)
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      
+      // Users can update their own non-critical fields
+      // Admins can update anything
+      allow update: if isAdmin() || 
+                       (isOwner(userId) && 
+                        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin', 'tokens', 'tokensSpent']));
+      
+      // Only admins can delete users
+      allow delete: if isAdmin();
+    }
+    
+    // ============= POOLS =============
+    match /pools/{poolId} {
+      // Anyone logged in can read pools (to view games)
+      allow read: if isSignedIn();
+      
+      // Only admins can create pools
+      allow create: if isAdmin();
+      
+      // Users can update pool grid (select squares)
+      // Admins can update everything
+      allow update: if isAdmin() || 
+                       (isSignedIn() && 
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['grid']));
+      
+      // Only admins can delete pools
+      allow delete: if isAdmin();
+    }
+    
+    // ============= ACTIVITY LOG =============
+    match /activityLog/{logId} {
+      // Anyone logged in can read activity logs
+      allow read: if isSignedIn();
+      
+      // Anyone logged in can create activity logs
+      // (they log their own actions)
+      allow create: if isSignedIn();
+      
+      // Only admins can update or delete logs
+      allow update, delete: if isAdmin();
+    }
+  }
+}

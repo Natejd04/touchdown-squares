@@ -1,0 +1,2892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Touchdown Squares - Football Pool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 20px 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .header {
+                margin-bottom: 30px;
+                padding: 30px;
+            }
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            color: #ffd700;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+            margin-bottom: 10px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @media (min-width: 768px) {
+            .header h1 {
+                font-size: 3em;
+            }
+        }
+
+        @keyframes glow {
+            from { text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5), 0 0 10px #ffd700; }
+            to { text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5), 0 0 20px #ffd700, 0 0 30px #ffd700; }
+        }
+
+        .matchup {
+            font-size: 1.2em;
+            margin: 20px 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .matchup {
+                font-size: 2em;
+                gap: 30px;
+            }
+        }
+
+        .team-logo {
+            width: 50px;
+            height: 50px;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @media (min-width: 768px) {
+            .team-logo {
+                width: 80px;
+                height: 80px;
+            }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .tagline {
+            font-style: italic;
+            color: #a8d5ba;
+            margin-top: 15px;
+            font-size: 0.9em;
+            padding: 0 10px;
+        }
+
+        @media (min-width: 768px) {
+            .tagline {
+                font-size: 1.1em;
+                padding: 0;
+            }
+        }
+
+        .auth-section, .main-content {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+            min-height: 44px;
+            touch-action: manipulation;
+        }
+
+        @media (min-width: 768px) {
+            .btn {
+                padding: 12px 30px;
+            }
+        }
+
+        .btn-primary {
+            background: #2d5a3d;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1a472a;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #666;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #444;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        @media (min-width: 768px) {
+            .user-info {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        .token-display {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        @media (min-width: 768px) {
+            .token-display {
+                font-size: 1.3em;
+            }
+        }
+
+        .pools-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        @media (min-width: 640px) {
+            .pools-list {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .pools-list {
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 20px;
+            }
+        }
+
+        .pool-card {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .pool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .pool-card h3 {
+            color: #2d5a3d;
+            margin-bottom: 10px;
+        }
+
+        .pool-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .status-open {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-locked {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .status-complete {
+            background: #6c757d;
+            color: white;
+        }
+
+        .grid-container {
+            margin: 30px 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 5px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+        }
+
+        .grid-container::after {
+            content: '';
+            display: none;
+        }
+
+        .football-grid {
+            display: inline-grid;
+            grid-template-columns: 25px repeat(10, 1fr);
+            grid-template-rows: 25px repeat(10, 1fr);
+            gap: 1px;
+            background: #333;
+            padding: 1px;
+            border-radius: 5px;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        @media (min-width: 480px) {
+            .football-grid {
+                grid-template-columns: 30px repeat(10, 1fr);
+                grid-template-rows: 30px repeat(10, 1fr);
+                max-width: 480px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .football-grid {
+                grid-template-columns: 40px repeat(10, 60px);
+                grid-template-rows: 40px repeat(10, 60px);
+                gap: 2px;
+                padding: 2px;
+                width: auto;
+                max-width: none;
+            }
+        }
+
+        .grid-cell {
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.55em;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            padding: 1px;
+            word-break: break-word;
+            min-height: 28px;
+            line-height: 1.1;
+        }
+
+        @media (min-width: 480px) {
+            .grid-cell {
+                font-size: 0.65em;
+                min-height: 32px;
+                padding: 2px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .grid-cell {
+                font-size: 0.85em;
+                padding: 0;
+                min-height: auto;
+            }
+        }
+
+        .grid-cell:hover:not(.header-cell):not(.taken) {
+            background: #e8f5e9;
+            transform: scale(1.05);
+        }
+
+        .grid-cell.taken {
+            background: #90caf9;
+            cursor: not-allowed;
+        }
+
+        .grid-cell.my-square {
+            background: #81c784;
+        }
+
+        .grid-cell.winner {
+            background: #ffd700 !important;
+            animation: winner-pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes winner-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .header-cell {
+            background: #2d5a3d;
+            color: white;
+            cursor: default;
+            font-size: 0.75em;
+        }
+
+        @media (min-width: 480px) {
+            .header-cell {
+                font-size: 0.85em;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .header-cell {
+                font-size: 1.1em;
+            }
+        }
+
+        .corner-cell {
+            background: #1a472a;
+        }
+
+        .admin-controls {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #ffc107;
+        }
+
+        .admin-controls h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .score-input {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 767px) {
+            .score-input {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .quarter-score {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+        }
+
+        .quarter-score h4 {
+            margin-bottom: 10px;
+            color: #2d5a3d;
+        }
+
+        .score-inputs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .score-inputs input {
+            width: 80px;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        .winners-display {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .winner-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-left: 4px solid #ffd700;
+            border-radius: 5px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            color: #333;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        @media (min-width: 768px) {
+            .modal-content {
+                padding: 30px;
+            }
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1em;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: #2d5a3d;
+            border-bottom-color: #2d5a3d;
+            font-weight: bold;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .error {
+            color: #dc3545;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .success {
+            color: #28a745;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .profile-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        @media (min-width: 768px) {
+            .profile-stats {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+            }
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        @media (min-width: 768px) {
+            .stat-card {
+                padding: 15px;
+            }
+        }
+
+        .stat-card h3 {
+            color: #2d5a3d;
+            margin-bottom: 5px;
+            font-size: 1.5em;
+        }
+
+        @media (min-width: 768px) {
+            .stat-card h3 {
+                font-size: 1.8em;
+            }
+        }
+
+        .stat-card p {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .my-games-list {
+            margin-top: 20px;
+        }
+
+        .game-entry {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #2d5a3d;
+        }
+
+        .game-entry h4 {
+            color: #2d5a3d;
+            margin-bottom: 10px;
+        }
+
+        .squares-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .square-badge {
+            background: #90caf9;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+
+        .square-badge.winner {
+            background: #ffd700;
+            font-weight: bold;
+        }
+
+        .activity-log {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            padding: 12px;
+            margin: 8px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #2d5a3d;
+        }
+
+        .activity-item.admin-action {
+            border-left-color: #ffc107;
+        }
+
+        .activity-item.user-action {
+            border-left-color: #17a2b8;
+        }
+
+        .activity-timestamp {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        @media (min-width: 768px) {
+            .nav-menu {
+                gap: 10px;
+            }
+        }
+
+        .nav-btn {
+            padding: 10px 15px;
+            background: #2d5a3d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9em;
+            flex: 1 1 auto;
+            min-width: 120px;
+        }
+
+        @media (min-width: 768px) {
+            .nav-btn {
+                padding: 10px 20px;
+                font-size: 1em;
+                flex: 0 1 auto;
+            }
+        }
+
+        .nav-btn:hover {
+            background: #1a472a;
+        }
+
+        .nav-btn.active {
+            background: #1a472a;
+            border-bottom: 3px solid #ffd700;
+        }
+
+        .alert {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffc107;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+
+        .team-label {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: inline-block;
+            margin: 5px;
+        }
+
+        .team-seahawks {
+            background: #69BE28;
+            color: #002244;
+        }
+
+        .team-patriots {
+            background: #C60C30;
+            color: white;
+        }
+
+        .available-squares {
+            font-size: 1.1em;
+            margin: 10px 0;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .random-select-section {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 2px solid #2196f3;
+        }
+
+        .random-select-section h4 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .random-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .random-input-group input,
+        .random-input-group select {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .countdown-timer {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2d5a3d;
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .countdown-timer.urgent {
+            background: #f8d7da;
+            color: #721c24;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .activity-filters {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .filter-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .filter-row {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        @media (min-width: 768px) {
+            .pagination {
+                gap: 10px;
+            }
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            min-height: 44px;
+        }
+
+        @media (min-width: 768px) {
+            .pagination button {
+                padding: 8px 15px;
+                font-size: 1em;
+            }
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination button.active {
+            background: #2d5a3d;
+            color: white;
+        }
+
+        .guest-banner {
+            background: #17a2b8;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .guest-banner a {
+            color: #ffd700;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            left: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @media (min-width: 768px) {
+            .toast {
+                left: auto;
+                max-width: 400px;
+                padding: 15px 25px;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @media (min-width: 768px) {
+            @keyframes slideIn {
+                from {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateY(-100px);
+                opacity: 0;
+            }
+        }
+
+        @media (min-width: 768px) {
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+            }
+        }
+
+        .toast.hiding {
+            animation: slideOut 0.3s ease-out forwards;
+        }
+
+        .toast-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .toast-error {
+            background: #dc3545;
+            color: white;
+        }
+
+        .toast-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .toast-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .toast-icon {
+            font-size: 1.5em;
+        }
+
+        .toast-close {
+            margin-left: auto;
+            cursor: pointer;
+            font-size: 1.2em;
+            opacity: 0.8;
+        }
+
+        .toast-close:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="toastContainer"></div>
+    <div class="container">
+        <div class="header">
+            <h1>🏈 TOUCHDOWN SQUARES 🏈</h1>
+            <div class="matchup">
+                <svg class="team-logo" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="#002244" stroke="#69BE28" stroke-width="3"/>
+                    <path d="M30,35 Q50,25 70,35 L70,65 Q50,75 30,65 Z" fill="#69BE28"/>
+                    <circle cx="50" cy="50" r="15" fill="#A5ACAF"/>
+                    <text x="50" y="58" text-anchor="middle" font-size="20" fill="#002244" font-weight="bold">12</text>
+                </svg>
+                <span style="color: #69BE28; font-weight: bold;">SEAHAWKS</span>
+                <span style="color: #ffd700;">vs</span>
+                <span style="color: #C60C30; font-weight: bold;">PATRIOTS</span>
+                <svg class="team-logo" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="#002244" stroke="#C60C30" stroke-width="3"/>
+                    <path d="M35,40 L45,30 L55,40 L60,35 L65,45 L70,40 L65,60 L35,60 Z" fill="#C60C30"/>
+                    <circle cx="45" cy="45" r="3" fill="white"/>
+                    <polygon points="50,50 55,55 50,65 45,55" fill="white"/>
+                </svg>
+            </div>
+            <p class="tagline">Go Hawks! Show those deflated Patriots how real champions play! 🦅💚</p>
+        </div>
+
+        <div id="authSection" class="auth-section">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('login')">Login</button>
+                <button class="tab" onclick="switchTab('signup')">Sign Up</button>
+            </div>
+
+            <div id="loginForm">
+                <h2>Login</h2>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="loginEmail" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="loginPassword" placeholder="Password">
+                </div>
+                <div id="loginError" class="error"></div>
+                <button class="btn btn-primary" onclick="login()">Login</button>
+                <p style="margin-top: 15px; text-align: center;">
+                    <a href="#" onclick="showResetPasswordModal(); return false;" style="color: #2d5a3d;">Forgot Password?</a>
+                </p>
+                <p style="margin-top: 15px; text-align: center;">
+                    <a href="#" onclick="browseAsGuest(); return false;" style="color: #2d5a3d; font-weight: bold;">Browse as Guest (View Only)</a>
+                </p>
+            </div>
+
+            <div id="signupForm" class="hidden">
+                <h2>Sign Up</h2>
+                <div class="form-group">
+                    <label>First Name:</label>
+                    <input type="text" id="signupFirstName" placeholder="First Name">
+                </div>
+                <div class="form-group">
+                    <label>Last Name:</label>
+                    <input type="text" id="signupLastName" placeholder="Last Name">
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="signupEmail" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="signupPassword" placeholder="Password (min 6 characters)">
+                </div>
+                <div id="signupError" class="error"></div>
+                <div id="signupSuccess" class="success"></div>
+                <button class="btn btn-primary" onclick="signup()">Sign Up</button>
+            </div>
+        </div>
+
+        <div id="mainContent" class="main-content hidden">
+            <div id="guestBanner" class="guest-banner hidden">
+                👁️ You are browsing as a guest. <a onclick="exitGuestMode()">Login or Sign Up</a> to select squares and join the fun!
+            </div>
+
+            <div class="user-info">
+                <div>
+                    <strong>Welcome, <span id="userName"></span>!</strong>
+                    <div class="token-display">💰 Tokens: <span id="userTokens">0</span></div>
+                </div>
+                <button class="btn btn-secondary" onclick="logout()">Logout</button>
+            </div>
+
+            <div class="nav-menu">
+                <button class="nav-btn active" onclick="showSection('pools')">Football Pools</button>
+                <button class="nav-btn" id="profileNavBtn" onclick="showSection('profile')">My Profile</button>
+                <button class="nav-btn" id="activityNavBtn" style="display: none;" onclick="showSection('activity')">Activity Log</button>
+            </div>
+
+            <div id="adminPanel" class="hidden">
+                <div class="admin-controls">
+                    <h3>🔧 Admin Controls</h3>
+                    <button class="btn btn-primary" onclick="showCreatePoolModal()">Create New Pool</button>
+                    <button class="btn btn-secondary" onclick="showManageUsersModal()">Manage User Tokens</button>
+                    <button class="btn btn-secondary" onclick="exportData()">💾 Export Data</button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📥 Import Data</button>
+                    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(this.files[0])">
+                </div>
+            </div>
+
+            <div id="poolsSection">
+                <div id="poolsList">
+                    <h2>Available Football Pools</h2>
+                    <div class="pools-list" id="poolsContainer"></div>
+                </div>
+
+                <div id="poolView" class="hidden">
+                    <button class="btn btn-secondary" onclick="backToPoolsList()">← Back to Pools</button>
+                    <div id="poolDetails"></div>
+                </div>
+            </div>
+
+            <div id="profileSection" class="hidden">
+                <h2>My Profile</h2>
+                <div class="profile-section" id="profileContent"></div>
+            </div>
+
+            <div id="activitySection" class="hidden">
+                <h2>Activity Log</h2>
+                <div class="profile-section">
+                    <div class="activity-filters">
+                        <h3>Filters</h3>
+                        <div class="filter-row">
+                            <div class="form-group">
+                                <label>User:</label>
+                                <select id="filterUser">
+                                    <option value="">All Users</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Action:</label>
+                                <select id="filterAction">
+                                    <option value="">All Actions</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>From Date:</label>
+                                <input type="date" id="filterFromDate">
+                            </div>
+                            <div class="form-group">
+                                <label>To Date:</label>
+                                <input type="date" id="filterToDate">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="applyActivityFilters()">Apply Filters</button>
+                        <button class="btn btn-secondary" onclick="clearActivityFilters()">Clear Filters</button>
+                    </div>
+                    <div class="activity-log" id="activityLog"></div>
+                    <div class="pagination" id="activityPagination"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="createPoolModal" class="modal">
+        <div class="modal-content">
+            <h2>Create New Pool</h2>
+            <div class="form-group">
+                <label>Pool Name:</label>
+                <input type="text" id="newPoolName" placeholder="e.g., Super Bowl Squares">
+            </div>
+            <div class="form-group">
+                <label>Tokens per Square:</label>
+                <input type="number" id="newPoolTokens" value="1" min="1">
+            </div>
+            <div class="form-group">
+                <label>Estimated Start Time:</label>
+                <input type="datetime-local" id="newPoolStartTime">
+            </div>
+            <div id="createPoolError" class="error"></div>
+            <button class="btn btn-primary" onclick="createPool()">Create Pool</button>
+            <button class="btn btn-secondary" onclick="closeModal('createPoolModal')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="manageUsersModal" class="modal">
+        <div class="modal-content">
+            <h2>Manage User Tokens</h2>
+            <div id="usersList"></div>
+            <button class="btn btn-secondary" onclick="closeModal('manageUsersModal')">Close</button>
+        </div>
+    </div>
+
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content">
+            <h2>Change Password Required</h2>
+            <p>Please change your password from the default.</p>
+            <div class="form-group">
+                <label>New Password:</label>
+                <input type="password" id="newPassword" placeholder="New Password (min 6 characters)">
+            </div>
+            <div class="form-group">
+                <label>Confirm Password:</label>
+                <input type="password" id="confirmPassword" placeholder="Confirm Password">
+            </div>
+            <div id="changePasswordError" class="error"></div>
+            <button class="btn btn-primary" onclick="changePassword()">Change Password</button>
+        </div>
+    </div>
+
+    <div id="resetPasswordModal" class="modal">
+        <div class="modal-content">
+            <h2>Reset Password</h2>
+            <p>Enter your email to receive a password reset link (valid for 15 minutes).</p>
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="resetEmail" placeholder="your@email.com">
+            </div>
+            <div id="resetError" class="error"></div>
+            <div id="resetSuccess" class="success"></div>
+            <button class="btn btn-primary" onclick="requestPasswordReset()">Send Reset Link</button>
+            <button class="btn btn-secondary" onclick="closeModal('resetPasswordModal')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="assignSquareModal" class="modal">
+        <div class="modal-content">
+            <h2>Assign Square to User</h2>
+            <div class="form-group">
+                <label>Select User:</label>
+                <select id="assignSquareUser"></select>
+            </div>
+            <div id="assignSquareError" class="error"></div>
+            <button class="btn btn-primary" onclick="confirmAssignSquare()">Assign Square</button>
+            <button class="btn btn-secondary" onclick="closeModal('assignSquareModal')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="editStartTimeModal" class="modal">
+        <div class="modal-content">
+            <h2>Edit Start Time</h2>
+            <div class="form-group">
+                <label>Start Time:</label>
+                <input type="datetime-local" id="editStartTime">
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="removeStartTime"> Remove start time (hide countdown)
+                </label>
+            </div>
+            <div id="editStartTimeError" class="error"></div>
+            <button class="btn btn-primary" onclick="confirmEditStartTime()">Save Changes</button>
+            <button class="btn btn-secondary" onclick="closeModal('editStartTimeModal')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="randomSelectModal" class="modal">
+        <div class="modal-content">
+            <h2>🎲 Random Square Selection</h2>
+            <div id="randomSelectContent"></div>
+            <div id="randomSelectError" class="error"></div>
+            <div id="randomSelectSuccess" class="success"></div>
+            <button class="btn btn-primary" id="randomSelectConfirmBtn" onclick="confirmRandomSelection()">Select Randomly</button>
+            <button class="btn btn-secondary" onclick="closeModal('randomSelectModal')">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize storage
+        if (!window.storage) {
+            console.log('Storage API not available, using localStorage fallback');
+        }
+
+        // Data structure
+        let currentUser = null;
+        let users = [];
+        let pools = [];
+        let activityLog = [];
+        let passwordResetTokens = {};
+        let pendingSquareAssignment = null;
+        let isGuestMode = false;
+        let currentEditingPool = null;
+        let pendingRandomSelection = null;
+
+        // Initialize app
+        async function initApp() {
+            await loadData();
+            checkAuth();
+        }
+
+        async function loadData() {
+            try {
+                // Try to load from persistent storage first
+                if (window.storage) {
+                    const usersData = await window.storage.get('users');
+                    const poolsData = await window.storage.get('pools');
+                    const activityData = await window.storage.get('activityLog');
+                    
+                    users = usersData ? JSON.parse(usersData.value) : [];
+                    pools = poolsData ? JSON.parse(poolsData.value) : [];
+                    activityLog = activityData ? JSON.parse(activityData.value) : [];
+                } else {
+                    // Fallback to localStorage
+                    users = JSON.parse(localStorage.getItem('users') || '[]');
+                    pools = JSON.parse(localStorage.getItem('pools') || '[]');
+                    activityLog = JSON.parse(localStorage.getItem('activityLog') || '[]');
+                }
+            } catch (error) {
+                console.log('No existing data, starting fresh');
+                users = [];
+                pools = [];
+                activityLog = [];
+            }
+
+            // Create default admin if doesn't exist
+            if (!users.find(u => u.email === 'admin')) {
+                users.push({
+                    id: 'admin',
+                    firstName: 'Admin',
+                    lastName: 'User',
+                    email: 'admin',
+                    password: 'Quinn1234',
+                    isAdmin: true,
+                    tokens: 0,
+                    tokensSpent: 0,
+                    needsPasswordChange: true
+                });
+                await saveData();
+            }
+        }
+
+        async function saveData() {
+            try {
+                if (window.storage) {
+                    await window.storage.set('users', JSON.stringify(users));
+                    await window.storage.set('pools', JSON.stringify(pools));
+                    await window.storage.set('activityLog', JSON.stringify(activityLog));
+                } else {
+                    localStorage.setItem('users', JSON.stringify(users));
+                    localStorage.setItem('pools', JSON.stringify(pools));
+                    localStorage.setItem('activityLog', JSON.stringify(activityLog));
+                }
+            } catch (error) {
+                console.error('Error saving data:', error);
+            }
+        }
+
+        async function logActivity(action, details) {
+            const entry = {
+                id: Date.now().toString(),
+                timestamp: new Date().toISOString(),
+                user: currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'System',
+                userId: currentUser ? currentUser.id : null,
+                isAdmin: currentUser ? currentUser.isAdmin : false,
+                action,
+                details
+            };
+            activityLog.unshift(entry);
+            // Keep only last 500 entries
+            if (activityLog.length > 500) {
+                activityLog = activityLog.slice(0, 500);
+            }
+            await saveData();
+        }
+
+        function showToast(message, type = 'info', duration = 4000) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type]}</span>
+                <span>${message}</span>
+                <span class="toast-close" onclick="this.parentElement.remove()">×</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Auto-remove after duration
+            setTimeout(() => {
+                toast.classList.add('hiding');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+        function checkAuth() {
+            const sessionUser = sessionStorage.getItem('currentUser');
+            const guestModeFlag = sessionStorage.getItem('isGuestMode');
+            
+            if (sessionUser) {
+                currentUser = JSON.parse(sessionUser);
+                isGuestMode = false;
+                sessionStorage.removeItem('isGuestMode'); // Clear any stale guest flag
+                showMainContent();
+                
+                if (currentUser.needsPasswordChange) {
+                    document.getElementById('changePasswordModal').classList.add('active');
+                }
+            } else if (guestModeFlag === 'true') {
+                // User was in guest mode, restore it
+                isGuestMode = true;
+                currentUser = {
+                    id: 'guest',
+                    firstName: 'Guest',
+                    lastName: 'User',
+                    isAdmin: false,
+                    tokens: 0
+                };
+                showMainContent();
+            } else {
+                showAuthSection();
+            }
+        }
+
+        function browseAsGuest() {
+            isGuestMode = true;
+            sessionStorage.setItem('isGuestMode', 'true');
+            sessionStorage.removeItem('currentUser'); // Make sure no real user is logged in
+            currentUser = {
+                id: 'guest',
+                firstName: 'Guest',
+                lastName: 'User',
+                isAdmin: false,
+                tokens: 0
+            };
+            showMainContent();
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            if (tab === 'login') {
+                document.querySelector('.tab:first-child').classList.add('active');
+                document.getElementById('loginForm').classList.remove('hidden');
+                document.getElementById('signupForm').classList.add('hidden');
+            } else {
+                document.querySelector('.tab:last-child').classList.add('active');
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('signupForm').classList.remove('hidden');
+            }
+        }
+
+        async function signup() {
+            const firstName = document.getElementById('signupFirstName').value.trim();
+            const lastName = document.getElementById('signupLastName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim().toLowerCase();
+            const password = document.getElementById('signupPassword').value;
+
+            const errorEl = document.getElementById('signupError');
+            const successEl = document.getElementById('signupSuccess');
+            errorEl.textContent = '';
+            successEl.textContent = '';
+
+            if (!firstName || !lastName || !email || !password) {
+                errorEl.textContent = 'All fields are required';
+                return;
+            }
+
+            if (password.length < 6) {
+                errorEl.textContent = 'Password must be at least 6 characters';
+                return;
+            }
+
+            if (users.find(u => u.email === email)) {
+                errorEl.textContent = 'Email already registered';
+                return;
+            }
+
+            users.push({
+                id: Date.now().toString(),
+                firstName,
+                lastName,
+                email,
+                password,
+                isAdmin: false,
+                tokens: 0,
+                tokensSpent: 0
+            });
+
+            await saveData();
+            await logActivity('User Signup', `New user registered: ${firstName} ${lastName} (${email})`);
+            
+            isGuestMode = false;
+            sessionStorage.removeItem('isGuestMode');
+            
+            successEl.textContent = 'Account created! Please login.';
+            setTimeout(() => switchTab('login'), 1500);
+        }
+
+        async function login() {
+            const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+            const password = document.getElementById('loginPassword').value;
+            const errorEl = document.getElementById('loginError');
+            errorEl.textContent = '';
+
+            const user = users.find(u => u.email === email && u.password === password);
+            if (!user) {
+                errorEl.textContent = 'Invalid email or password';
+                return;
+            }
+
+            currentUser = user;
+            isGuestMode = false;
+            sessionStorage.setItem('currentUser', JSON.stringify(user));
+            sessionStorage.removeItem('isGuestMode'); // Clear guest mode flag
+            
+            showMainContent();
+
+            if (user.needsPasswordChange) {
+                document.getElementById('changePasswordModal').classList.add('active');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            isGuestMode = false;
+            sessionStorage.removeItem('currentUser');
+            sessionStorage.removeItem('isGuestMode');
+            showAuthSection();
+        }
+
+        async function changePassword() {
+            const newPass = document.getElementById('newPassword').value;
+            const confirmPass = document.getElementById('confirmPassword').value;
+            const errorEl = document.getElementById('changePasswordError');
+            errorEl.textContent = '';
+
+            if (newPass.length < 6) {
+                errorEl.textContent = 'Password must be at least 6 characters';
+                return;
+            }
+
+            if (newPass !== confirmPass) {
+                errorEl.textContent = 'Passwords do not match';
+                return;
+            }
+
+            const userIndex = users.findIndex(u => u.id === currentUser.id);
+            users[userIndex].password = newPass;
+            users[userIndex].needsPasswordChange = false;
+            currentUser.needsPasswordChange = false;
+            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            await saveData();
+            closeModal('changePasswordModal');
+        }
+
+        function showAuthSection() {
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('mainContent').classList.add('hidden');
+            isGuestMode = false;
+            currentUser = null;
+            sessionStorage.removeItem('isGuestMode');
+            sessionStorage.removeItem('currentUser');
+        }
+
+        function exitGuestMode() {
+            isGuestMode = false;
+            currentUser = null;
+            sessionStorage.removeItem('isGuestMode');
+            showAuthSection();
+        }
+
+        function showMainContent() {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            document.getElementById('userName').textContent = currentUser.firstName + ' ' + currentUser.lastName;
+            document.getElementById('userTokens').textContent = currentUser.tokens;
+
+            // Show/hide guest banner
+            if (isGuestMode) {
+                document.getElementById('guestBanner').classList.remove('hidden');
+                document.querySelector('.user-info').classList.add('hidden');
+                document.getElementById('profileNavBtn').classList.add('hidden');
+            } else {
+                document.getElementById('guestBanner').classList.add('hidden');
+                document.querySelector('.user-info').classList.remove('hidden');
+                document.getElementById('profileNavBtn').classList.remove('hidden');
+            }
+
+            if (currentUser.isAdmin) {
+                document.getElementById('adminPanel').classList.remove('hidden');
+                document.getElementById('activityNavBtn').style.display = 'block';
+            } else {
+                document.getElementById('adminPanel').classList.add('hidden');
+                document.getElementById('activityNavBtn').style.display = 'none';
+            }
+
+            showSection('pools');
+            startCountdownTimers();
+        }
+
+        function showSection(section) {
+            // Hide all sections
+            document.getElementById('poolsSection').classList.add('hidden');
+            document.getElementById('profileSection').classList.add('hidden');
+            document.getElementById('activitySection').classList.add('hidden');
+
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+
+            // Show selected section
+            if (section === 'pools') {
+                document.getElementById('poolsSection').classList.remove('hidden');
+                document.querySelector('.nav-btn').classList.add('active');
+                displayPools();
+            } else if (section === 'profile') {
+                document.getElementById('profileSection').classList.remove('hidden');
+                document.querySelectorAll('.nav-btn')[1].classList.add('active');
+                displayProfile();
+            } else if (section === 'activity' && currentUser.isAdmin) {
+                document.getElementById('activitySection').classList.remove('hidden');
+                document.getElementById('activityNavBtn').classList.add('active');
+                displayActivityLog();
+            }
+        }
+
+        function showSection(section) {
+            // Hide all sections
+            document.getElementById('poolsSection').classList.add('hidden');
+            document.getElementById('profileSection').classList.add('hidden');
+            document.getElementById('activitySection').classList.add('hidden');
+
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+
+            // Show selected section
+            if (section === 'pools') {
+                document.getElementById('poolsSection').classList.remove('hidden');
+                document.querySelector('.nav-btn').classList.add('active');
+                displayPools();
+            } else if (section === 'profile' && !isGuestMode) {
+                document.getElementById('profileSection').classList.remove('hidden');
+                document.querySelectorAll('.nav-btn')[1].classList.add('active');
+                displayProfile();
+            } else if (section === 'activity' && currentUser.isAdmin) {
+                document.getElementById('activitySection').classList.remove('hidden');
+                document.getElementById('activityNavBtn').classList.add('active');
+                displayActivityLog();
+            }
+        }
+
+        let countdownInterval = null;
+        function startCountdownTimers() {
+            if (countdownInterval) clearInterval(countdownInterval);
+            countdownInterval = setInterval(updateCountdowns, 1000);
+            updateCountdowns();
+        }
+
+        function updateCountdowns() {
+            const countdownElements = document.querySelectorAll('.countdown-timer');
+            countdownElements.forEach(el => {
+                const targetTime = parseInt(el.dataset.targetTime);
+                const now = Date.now();
+                const diff = targetTime - now;
+
+                if (diff <= 0) {
+                    el.textContent = '🏈 Game Time!';
+                    el.classList.add('urgent');
+                } else {
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                    let countdownText = '⏰ Starts in: ';
+                    if (days > 0) countdownText += `${days}d `;
+                    if (hours > 0 || days > 0) countdownText += `${hours}h `;
+                    countdownText += `${minutes}m ${seconds}s`;
+
+                    el.textContent = countdownText;
+
+                    if (diff < 60 * 60 * 1000) { // Less than 1 hour
+                        el.classList.add('urgent');
+                    }
+                }
+            });
+        }
+
+        let currentActivityPage = 1;
+        let filteredActivityLog = [];
+        const ITEMS_PER_PAGE = 100;
+
+        function displayActivityLog() {
+            const container = document.getElementById('activityLog');
+            
+            // Populate filter dropdowns
+            const userSelect = document.getElementById('filterUser');
+            const actionSelect = document.getElementById('filterAction');
+            
+            // Get unique users and actions
+            const uniqueUsers = [...new Set(activityLog.map(a => a.user))];
+            const uniqueActions = [...new Set(activityLog.map(a => a.action))];
+            
+            userSelect.innerHTML = '<option value="">All Users</option>';
+            uniqueUsers.forEach(user => {
+                userSelect.innerHTML += `<option value="${user}">${user}</option>`;
+            });
+            
+            actionSelect.innerHTML = '<option value="">All Actions</option>';
+            uniqueActions.forEach(action => {
+                actionSelect.innerHTML += `<option value="${action}">${action}</option>`;
+            });
+
+            applyActivityFilters();
+        }
+
+        function applyActivityFilters() {
+            const userFilter = document.getElementById('filterUser').value;
+            const actionFilter = document.getElementById('filterAction').value;
+            const fromDate = document.getElementById('filterFromDate').value;
+            const toDate = document.getElementById('filterToDate').value;
+
+            filteredActivityLog = activityLog.filter(entry => {
+                if (userFilter && entry.user !== userFilter) return false;
+                if (actionFilter && entry.action !== actionFilter) return false;
+                
+                const entryDate = new Date(entry.timestamp);
+                if (fromDate && entryDate < new Date(fromDate)) return false;
+                if (toDate && entryDate > new Date(toDate + 'T23:59:59')) return false;
+                
+                return true;
+            });
+
+            currentActivityPage = 1;
+            renderActivityPage();
+        }
+
+        function clearActivityFilters() {
+            document.getElementById('filterUser').value = '';
+            document.getElementById('filterAction').value = '';
+            document.getElementById('filterFromDate').value = '';
+            document.getElementById('filterToDate').value = '';
+            applyActivityFilters();
+        }
+
+        function renderActivityPage() {
+            const container = document.getElementById('activityLog');
+            const pagination = document.getElementById('activityPagination');
+
+            if (filteredActivityLog.length === 0) {
+                container.innerHTML = '<p>No activity found matching filters.</p>';
+                pagination.innerHTML = '';
+                return;
+            }
+
+            const totalPages = Math.ceil(filteredActivityLog.length / ITEMS_PER_PAGE);
+            const startIdx = (currentActivityPage - 1) * ITEMS_PER_PAGE;
+            const endIdx = Math.min(startIdx + ITEMS_PER_PAGE, filteredActivityLog.length);
+            const pageItems = filteredActivityLog.slice(startIdx, endIdx);
+
+            let html = '';
+            pageItems.forEach(entry => {
+                const date = new Date(entry.timestamp);
+                const actionClass = entry.isAdmin ? 'admin-action' : 'user-action';
+                
+                html += `
+                    <div class="activity-item ${actionClass}">
+                        <div><strong>${entry.user}</strong> ${entry.isAdmin ? '(Admin)' : ''}</div>
+                        <div>${entry.action}</div>
+                        <div style="font-size: 0.9em; color: #666;">${entry.details}</div>
+                        <div class="activity-timestamp">${date.toLocaleString()}</div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            // Render pagination
+            let paginationHtml = `<div>Showing ${startIdx + 1}-${endIdx} of ${filteredActivityLog.length}</div>`;
+            paginationHtml += `<button onclick="changeActivityPage(${currentActivityPage - 1})" ${currentActivityPage === 1 ? 'disabled' : ''}>Previous</button>`;
+            
+            // Show page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentActivityPage - 2 && i <= currentActivityPage + 2)) {
+                    paginationHtml += `<button onclick="changeActivityPage(${i})" class="${i === currentActivityPage ? 'active' : ''}">${i}</button>`;
+                } else if (i === currentActivityPage - 3 || i === currentActivityPage + 3) {
+                    paginationHtml += '<span>...</span>';
+                }
+            }
+            
+            paginationHtml += `<button onclick="changeActivityPage(${currentActivityPage + 1})" ${currentActivityPage === totalPages ? 'disabled' : ''}>Next</button>`;
+            
+            pagination.innerHTML = paginationHtml;
+        }
+
+        function changeActivityPage(page) {
+            const totalPages = Math.ceil(filteredActivityLog.length / ITEMS_PER_PAGE);
+            if (page < 1 || page > totalPages) return;
+            currentActivityPage = page;
+            renderActivityPage();
+        }
+
+        function displayProfile() {
+            const container = document.getElementById('profileContent');
+            
+            // Get user's games and squares
+            const userGames = pools.map(pool => {
+                const squares = [];
+                const winningQuarters = [];
+                
+                pool.grid.forEach((row, rowIdx) => {
+                    row.forEach((cell, colIdx) => {
+                        if (cell && cell.userId === currentUser.id) {
+                            // Get the team numbers for this square
+                            let squareInfo = { row: rowIdx, col: colIdx, pool: pool.name };
+                            
+                            if (pool.isLocked && pool.topNumbers[colIdx] !== null && pool.sideNumbers[rowIdx] !== null) {
+                                squareInfo.seahawksNumber = pool.topNumbers[colIdx];
+                                squareInfo.patriotsNumber = pool.sideNumbers[rowIdx];
+                            }
+                            
+                            squares.push(squareInfo);
+                            
+                            // Check if this square is a winner
+                            Object.entries(pool.winningSquares || {}).forEach(([quarter, ws]) => {
+                                if (ws && ws.row === rowIdx && ws.col === colIdx) {
+                                    const quarterNames = {q1: '1st Quarter', q2: '2nd Quarter', q3: '3rd Quarter', q4: '4th Quarter', final: 'Final'};
+                                    const prize = Math.floor(pool.tokensPerSquare * 100 / 5);
+                                    winningQuarters.push({
+                                        quarter: quarterNames[quarter],
+                                        prize: prize,
+                                        pool: pool.name
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
+                
+                return squares.length > 0 ? { pool, squares, winningQuarters } : null;
+            }).filter(g => g !== null);
+
+            let html = `
+                <div class="profile-stats">
+                    <div class="stat-card">
+                        <h3>${currentUser.tokens}</h3>
+                        <p>Available Tokens</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${currentUser.tokensSpent || 0}</h3>
+                        <p>Tokens Spent</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${userGames.reduce((sum, g) => sum + g.squares.length, 0)}</h3>
+                        <p>Squares Selected</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>${userGames.reduce((sum, g) => sum + g.winningQuarters.length, 0)}</h3>
+                        <p>Quarters Won</p>
+                    </div>
+                </div>
+            `;
+
+            if (currentUser.tokens === 1) {
+                html += '<div class="alert alert-warning">⚠️ You only have 1 token remaining!</div>';
+            }
+
+            if (userGames.length > 0) {
+                html += '<div class="my-games-list"><h3>My Games</h3>';
+                userGames.forEach(game => {
+                    html += `<div class="game-entry">`;
+                    html += `<h4>${game.pool.name}</h4>`;
+                    
+                    // Show game status
+                    if (game.pool.isLocked) {
+                        html += `<p style="color: #ffc107; font-weight: bold;">🔒 Game Locked - Numbers Revealed!</p>`;
+                    } else {
+                        html += `<p style="color: #28a745; font-weight: bold;">📝 Game Open - Numbers TBD</p>`;
+                    }
+                    
+                    html += `<p><strong>Squares:</strong></p>`;
+                    html += '<div class="squares-list">';
+                    game.squares.forEach(sq => {
+                        const isWinner = game.winningQuarters.some(wq => 
+                            game.pool.winningSquares && Object.values(game.pool.winningSquares).some(ws => 
+                                ws && ws.row === sq.row && ws.col === sq.col
+                            )
+                        );
+                        const badgeClass = isWinner ? 'square-badge winner' : 'square-badge';
+                        
+                        let squareText = '';
+                        if (game.pool.isLocked && sq.seahawksNumber !== undefined && sq.patriotsNumber !== undefined) {
+                            // Show team numbers when locked
+                            squareText = `Seahawks: ${sq.seahawksNumber}, Patriots: ${sq.patriotsNumber}`;
+                        } else {
+                            // Show row/col when not locked
+                            squareText = `Row ${sq.row + 1}, Col ${sq.col + 1}`;
+                        }
+                        
+                        html += `<span class="${badgeClass}">${squareText}</span>`;
+                    });
+                    html += '</div>';
+                    
+                    if (game.winningQuarters.length > 0) {
+                        html += '<p style="margin-top: 10px;"><strong>🏆 Winnings:</strong></p>';
+                        game.winningQuarters.forEach(wq => {
+                            html += `<div style="color: #ffd700; font-weight: bold;">• ${wq.quarter}: ${wq.prize} tokens</div>`;
+                        });
+                    }
+                    html += `</div>`;
+                });
+                html += '</div>';
+            } else {
+                html += '<p>You haven\'t joined any games yet!</p>';
+            }
+
+            container.innerHTML = html;
+        }
+
+        function displayPools() {
+            const container = document.getElementById('poolsContainer');
+            container.innerHTML = '';
+
+            if (pools.length === 0) {
+                container.innerHTML = '<p>No pools available yet. Check back soon!</p>';
+                return;
+            }
+
+            pools.forEach(pool => {
+                const card = document.createElement('div');
+                card.className = 'pool-card';
+                card.onclick = () => viewPool(pool.id);
+
+                const filledSquares = pool.grid.flat().filter(s => s !== null).length;
+                const totalSquares = 100;
+                const availableSquares = totalSquares - filledSquares;
+                
+                let status = 'Open';
+                let statusClass = 'status-open';
+                if (pool.isComplete) {
+                    status = 'Complete';
+                    statusClass = 'status-complete';
+                } else if (pool.isLocked) {
+                    status = 'Locked';
+                    statusClass = 'status-locked';
+                }
+
+                let countdownHtml = '';
+                // Only show countdown if pool has start time AND is not locked yet
+                if (pool.startTime && !pool.isLocked) {
+                    const startTime = new Date(pool.startTime).getTime();
+                    countdownHtml = `<div class="countdown-timer" data-target-time="${startTime}"></div>`;
+                }
+
+                card.innerHTML = `
+                    <h3>${pool.name}</h3>
+                    ${countdownHtml}
+                    <p><strong>${pool.tokensPerSquare} token${pool.tokensPerSquare > 1 ? 's' : ''}</strong> per square</p>
+                    <p>Squares filled: ${filledSquares}/${totalSquares}</p>
+                    <p><strong>${availableSquares} squares available</strong></p>
+                    <span class="pool-status ${statusClass}">${status}</span>
+                `;
+
+                container.appendChild(card);
+            });
+
+            updateCountdowns();
+        }
+
+        function viewPool(poolId) {
+            const pool = pools.find(p => p.id === poolId);
+            if (!pool) return;
+
+            document.getElementById('poolsList').classList.add('hidden');
+            document.getElementById('poolView').classList.remove('hidden');
+
+            renderPoolView(pool);
+        }
+
+        function backToPoolsList() {
+            document.getElementById('poolsList').classList.remove('hidden');
+            document.getElementById('poolView').classList.add('hidden');
+        }
+
+        function renderPoolView(pool) {
+            const container = document.getElementById('poolDetails');
+            
+            const filledSquares = pool.grid.flat().filter(s => s !== null).length;
+            const availableSquares = 100 - filledSquares;
+            
+            let html = `<h2>${pool.name}</h2>`;
+            
+            // Only show countdown if pool has start time AND is not locked yet
+            if (pool.startTime && !pool.isLocked) {
+                const startTime = new Date(pool.startTime).getTime();
+                html += `<div class="countdown-timer" data-target-time="${startTime}"></div>`;
+            }
+            
+            html += `<p><strong>Cost:</strong> ${pool.tokensPerSquare} token${pool.tokensPerSquare > 1 ? 's' : ''} per square</p>`;
+            html += `<div class="available-squares">📊 ${availableSquares} squares available</div>`;
+            
+            html += '<div style="margin: 15px 0;">';
+            html += '<span class="team-label team-seahawks">Seahawks (Top)</span>';
+            html += '<span class="team-label team-patriots">Patriots (Side)</span>';
+            html += '</div>';
+            
+            // Random selection section for users (not locked, not guest)
+            if (!pool.isLocked && !isGuestMode) {
+                const emptySquares = pool.grid.flat().filter(s => s === null).length;
+                
+                if (!currentUser.isAdmin && emptySquares > 0) {
+                    const maxSquares = Math.min(
+                        Math.floor(currentUser.tokens / pool.tokensPerSquare),
+                        emptySquares
+                    );
+                    
+                    if (maxSquares > 0) {
+                        html += '<div class="random-select-section">';
+                        html += '<h4>🎲 Feeling Lucky?</h4>';
+                        html += '<p style="font-size: 0.9em; margin-bottom: 10px;">Let the computer randomly select squares for you!</p>';
+                        html += '<div class="random-input-group">';
+                        html += `<input type="number" id="randomSquareCount" min="1" max="${maxSquares}" value="1" placeholder="Number of squares">`;
+                        html += `<button class="btn btn-primary" onclick="showRandomSelectModal('${pool.id}', false)">Random Select</button>`;
+                        html += '</div>';
+                        html += `<p style="font-size: 0.8em; color: #666; margin-top: 5px;">Max: ${maxSquares} square${maxSquares > 1 ? 's' : ''} (based on your ${currentUser.tokens} tokens)</p>`;
+                        html += '</div>';
+                    }
+                } else if (currentUser.isAdmin && emptySquares > 0) {
+                    // Admin version - can select for any user
+                    html += '<div class="random-select-section">';
+                    html += '<h4>🎲 Admin: Random Selection</h4>';
+                    html += '<p style="font-size: 0.9em; margin-bottom: 10px;">Randomly assign squares to a user</p>';
+                    html += '<div class="random-input-group">';
+                    html += '<select id="randomSelectUser" style="flex: 2;">';
+                    html += '<option value="">-- Select User --</option>';
+                    users.filter(u => !u.isAdmin).forEach(user => {
+                        const maxForUser = Math.min(
+                            Math.floor(user.tokens / pool.tokensPerSquare),
+                            emptySquares
+                        );
+                        html += `<option value="${user.id}" data-max="${maxForUser}">${user.firstName} ${user.lastName} (${user.tokens} tokens - max ${maxForUser})</option>`;
+                    });
+                    html += '</select>';
+                    html += `<input type="number" id="randomSquareCountAdmin" min="1" max="${emptySquares}" value="1" placeholder="# squares">`;
+                    html += `<button class="btn btn-primary" onclick="showRandomSelectModal('${pool.id}', true)">Random Assign</button>`;
+                    html += '</div>';
+                    html += '</div>';
+                }
+            }
+            
+            // Add mobile hint for non-admin users
+            if (!currentUser.isAdmin && !pool.isLocked && !isGuestMode) {
+                html += '<div style="text-align: center; font-size: 0.9em; color: #666; margin: 10px 0;">Tap any empty square to claim it!</div>';
+            }
+
+            // Admin controls
+            if (currentUser.isAdmin) {
+                html += '<div class="admin-controls">';
+                html += '<h3>Admin Controls</h3>';
+                
+                // Edit start time button
+                html += `<button class="btn btn-secondary" onclick="showEditStartTimeModal('${pool.id}')">⏰ Edit Start Time</button>`;
+                
+                if (!pool.isLocked) {
+                    const allFilled = filledSquares === 100;
+                    if (!allFilled) {
+                        html += '<p style="color: #dc3545;">⚠️ All 100 squares must be filled before starting the game!</p>';
+                    }
+                    html += `<button class="btn btn-primary" ${!allFilled ? 'disabled' : ''} onclick="lockAndStartPool('${pool.id}')">Lock & Start Game</button>`;
+                }
+                
+                if (pool.isLocked) {
+                    html += '<div class="score-input">';
+                    ['1st', '2nd', '3rd', '4th', 'Final'].forEach((quarter, idx) => {
+                        const quarterKey = ['q1', 'q2', 'q3', 'q4', 'final'][idx];
+                        const scores = pool.scores[quarterKey] || { seahawks: '', patriots: '' };
+                        
+                        html += `
+                            <div class="quarter-score">
+                                <h4>${quarter} Quarter ${quarter === 'Final' ? 'Score' : ''}</h4>
+                                <div class="score-inputs">
+                                    <input type="number" placeholder="Seahawks" value="${scores.seahawks}" 
+                                           onchange="updateScore('${pool.id}', '${quarterKey}', 'seahawks', this.value)" min="0">
+                                    <input type="number" placeholder="Patriots" value="${scores.patriots}" 
+                                           onchange="updateScore('${pool.id}', '${quarterKey}', 'patriots', this.value)" min="0">
+                                </div>
+                                ${pool.winners[quarterKey] ? `<div class="success">Winner: ${pool.winners[quarterKey]}</div>` : ''}
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+
+                    html += '<h4 style="margin-top: 20px;">Edit Numbers (if needed):</h4>';
+                    html += '<p>Top (Seahawks): ';
+                    pool.topNumbers.forEach((num, idx) => {
+                        html += `<input type="number" min="0" max="9" value="${num}" 
+                                style="width: 40px; margin: 2px;" 
+                                onchange="updateNumber('${pool.id}', 'top', ${idx}, this.value)"> `;
+                    });
+                    html += '</p><p>Side (Patriots): ';
+                    pool.sideNumbers.forEach((num, idx) => {
+                        html += `<input type="number" min="0" max="9" value="${num}" 
+                                style="width: 40px; margin: 2px;" 
+                                onchange="updateNumber('${pool.id}', 'side', ${idx}, this.value)"> `;
+                    });
+                    html += '</p>';
+                }
+
+                html += '</div>';
+            }
+
+            // Grid
+            html += '<div class="grid-container">';
+            html += '<div class="football-grid">';
+
+            // Corner cell
+            html += '<div class="grid-cell header-cell corner-cell">🏈</div>';
+
+            // Top numbers (Seahawks)
+            for (let i = 0; i < 10; i++) {
+                const num = pool.topNumbers[i] !== null ? pool.topNumbers[i] : '';
+                html += `<div class="grid-cell header-cell">${num}</div>`;
+            }
+
+            // Grid rows
+            for (let row = 0; row < 10; row++) {
+                // Side number (Patriots)
+                const sideNum = pool.sideNumbers[row] !== null ? pool.sideNumbers[row] : '';
+                html += `<div class="grid-cell header-cell">${sideNum}</div>`;
+
+                // Squares
+                for (let col = 0; col < 10; col++) {
+                    const cellData = pool.grid[row][col];
+                    let cellClass = 'grid-cell';
+                    let cellContent = '';
+                    let cellClick = '';
+
+                    if (cellData) {
+                        cellClass += ' taken';
+                        if (!isGuestMode && cellData.userId === currentUser.id) {
+                            cellClass += ' my-square';
+                        }
+                        cellContent = `${cellData.firstName} ${cellData.lastName.charAt(0)}.`;
+                        
+                        if (currentUser.isAdmin) {
+                            cellClick = `onclick="clearSquare('${pool.id}', ${row}, ${col})"`;
+                        }
+                    } else if (!pool.isLocked && !isGuestMode) {
+                        if (currentUser.isAdmin) {
+                            cellClick = `onclick="assignSquareToUser('${pool.id}', ${row}, ${col})"`;
+                        } else {
+                            cellClick = `onclick="selectSquare('${pool.id}', ${row}, ${col})"`;
+                        }
+                    }
+
+                    // Check if this is a winning square
+                    Object.values(pool.winningSquares || {}).forEach(ws => {
+                        if (ws && ws.row === row && ws.col === col) {
+                            cellClass += ' winner';
+                        }
+                    });
+
+                    html += `<div class="${cellClass}" ${cellClick}>${cellContent}</div>`;
+                }
+            }
+
+            html += '</div></div>';
+
+            // Winners display
+            if (pool.isLocked && Object.keys(pool.winners).length > 0) {
+                html += '<div class="winners-display">';
+                html += '<h3>🏆 Winners</h3>';
+                ['q1', 'q2', 'q3', 'q4', 'final'].forEach(quarter => {
+                    if (pool.winners[quarter]) {
+                        const quarterName = {'q1': '1st Quarter', 'q2': '2nd Quarter', 'q3': '3rd Quarter', 'q4': '4th Quarter', 'final': 'Final'}[quarter];
+                        const prize = Math.floor(pool.tokensPerSquare * 100 / 5);
+                        html += `<div class="winner-item"><strong>${quarterName}:</strong> ${pool.winners[quarter]} - ${prize} tokens</div>`;
+                    }
+                });
+                html += '</div>';
+            }
+
+            container.innerHTML = html;
+            updateCountdowns();
+        }
+
+        async function selectSquare(poolId, row, col) {
+            const pool = pools.find(p => p.id === poolId);
+            if (!pool || pool.isLocked) return;
+
+            if (pool.grid[row][col]) {
+                showToast('This square is already taken!', 'error');
+                return;
+            }
+
+            if (currentUser.tokens === 0) {
+                showToast('You have no tokens remaining! Please contact an admin to add more tokens.', 'error', 5000);
+                return;
+            }
+
+            if (currentUser.tokens < pool.tokensPerSquare) {
+                showToast(`You need ${pool.tokensPerSquare} token${pool.tokensPerSquare > 1 ? 's' : ''} but only have ${currentUser.tokens}.`, 'error');
+                return;
+            }
+
+            pool.grid[row][col] = {
+                userId: currentUser.id,
+                firstName: currentUser.firstName,
+                lastName: currentUser.lastName
+            };
+
+            const userIndex = users.findIndex(u => u.id === currentUser.id);
+            users[userIndex].tokens -= pool.tokensPerSquare;
+            users[userIndex].tokensSpent = (users[userIndex].tokensSpent || 0) + pool.tokensPerSquare;
+            currentUser.tokens = users[userIndex].tokens;
+            currentUser.tokensSpent = users[userIndex].tokensSpent;
+            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+            document.getElementById('userTokens').textContent = currentUser.tokens;
+
+            await logActivity(
+                'Square Selected',
+                `Selected square (${row}, ${col}) in ${pool.name} for ${pool.tokensPerSquare} token(s)`
+            );
+
+            await saveData();
+            renderPoolView(pool);
+
+            // Success message
+            showToast(`Square selected! You spent ${pool.tokensPerSquare} token${pool.tokensPerSquare > 1 ? 's' : ''}. ${currentUser.tokens} remaining.`, 'success');
+
+            // Alert if only 1 token left
+            if (currentUser.tokens === 1) {
+                setTimeout(() => {
+                    showToast('⚠️ Warning: You only have 1 token remaining!', 'warning', 5000);
+                }, 500);
+            }
+        }
+
+        async function clearSquare(poolId, row, col) {
+            if (!currentUser.isAdmin) return;
+
+            const pool = pools.find(p => p.id === poolId);
+            const cellData = pool.grid[row][col];
+            
+            if (cellData) {
+                const user = users.find(u => u.id === cellData.userId);
+                if (user) {
+                    user.tokens += pool.tokensPerSquare;
+                    user.tokensSpent = (user.tokensSpent || 0) - pool.tokensPerSquare;
+                }
+                
+                await logActivity(
+                    'Square Cleared by Admin',
+                    `Removed ${cellData.firstName} ${cellData.lastName} from square (${row}, ${col}) in ${pool.name}. ${pool.tokensPerSquare} token(s) refunded.`
+                );
+                
+                pool.grid[row][col] = null;
+                await saveData();
+                renderPoolView(pool);
+                
+                showToast(`Square cleared. ${pool.tokensPerSquare} token${pool.tokensPerSquare > 1 ? 's' : ''} refunded to ${cellData.firstName} ${cellData.lastName}.`, 'info');
+            }
+        }
+
+        function assignSquareToUser(poolId, row, col) {
+            if (!currentUser.isAdmin) return;
+
+            const pool = pools.find(p => p.id === poolId);
+            if (pool.grid[row][col]) {
+                showToast('This square is already taken!', 'error');
+                return;
+            }
+
+            // Populate user dropdown
+            const select = document.getElementById('assignSquareUser');
+            select.innerHTML = '<option value="">-- Select User --</option>';
+            
+            users.filter(u => !u.isAdmin).forEach(user => {
+                const canAfford = user.tokens >= pool.tokensPerSquare;
+                const optionText = `${user.firstName} ${user.lastName} (${user.tokens} tokens)${!canAfford ? ' - INSUFFICIENT TOKENS' : ''}`;
+                const option = new Option(optionText, user.id);
+                option.disabled = !canAfford;
+                select.add(option);
+            });
+
+            pendingSquareAssignment = { poolId, row, col };
+            document.getElementById('assignSquareModal').classList.add('active');
+        }
+
+        async function confirmAssignSquare() {
+            const userId = document.getElementById('assignSquareUser').value;
+            const errorEl = document.getElementById('assignSquareError');
+            errorEl.textContent = '';
+
+            if (!userId) {
+                errorEl.textContent = 'Please select a user';
+                return;
+            }
+
+            const { poolId, row, col } = pendingSquareAssignment;
+            const pool = pools.find(p => p.id === poolId);
+            
+            // Double-check square is still empty
+            if (pool.grid[row][col]) {
+                errorEl.textContent = 'This square has already been assigned!';
+                showToast('Error: Square was already assigned by someone else!', 'error');
+                return;
+            }
+
+            const user = users.find(u => u.id === userId);
+
+            if (user.tokens < pool.tokensPerSquare) {
+                errorEl.textContent = 'User does not have enough tokens';
+                return;
+            }
+
+            // Assign the square
+            pool.grid[row][col] = {
+                userId: user.id,
+                firstName: user.firstName,
+                lastName: user.lastName
+            };
+
+            // Deduct tokens
+            user.tokens -= pool.tokensPerSquare;
+            user.tokensSpent = (user.tokensSpent || 0) + pool.tokensPerSquare;
+
+            await logActivity(
+                'Square Assigned by Admin',
+                `Admin assigned square (${row}, ${col}) in ${pool.name} to ${user.firstName} ${user.lastName} for ${pool.tokensPerSquare} token(s)`
+            );
+
+            await saveData();
+            closeModal('assignSquareModal');
+            pendingSquareAssignment = null;
+            renderPoolView(pool);
+            
+            showToast(`Square assigned to ${user.firstName} ${user.lastName}!`, 'success');
+        }
+
+        function showEditStartTimeModal(poolId) {
+            if (!currentUser.isAdmin) return;
+            
+            const pool = pools.find(p => p.id === poolId);
+            currentEditingPool = poolId;
+            
+            const input = document.getElementById('editStartTime');
+            const checkbox = document.getElementById('removeStartTime');
+            
+            if (pool.startTime) {
+                // Convert ISO string to datetime-local format
+                const date = new Date(pool.startTime);
+                const offset = date.getTimezoneOffset();
+                const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+                input.value = localDate.toISOString().slice(0, 16);
+                checkbox.checked = false;
+            } else {
+                input.value = '';
+                checkbox.checked = true;
+            }
+            
+            document.getElementById('editStartTimeModal').classList.add('active');
+        }
+
+        async function confirmEditStartTime() {
+            const poolId = currentEditingPool;
+            const pool = pools.find(p => p.id === poolId);
+            const newStartTime = document.getElementById('editStartTime').value;
+            const removeTime = document.getElementById('removeStartTime').checked;
+            const errorEl = document.getElementById('editStartTimeError');
+            errorEl.textContent = '';
+            
+            const oldStartTime = pool.startTime ? new Date(pool.startTime).toLocaleString() : 'None';
+            
+            if (removeTime) {
+                pool.startTime = null;
+                await logActivity(
+                    'Start Time Removed',
+                    `Admin removed start time from ${pool.name} (was: ${oldStartTime})`
+                );
+                showToast('Start time removed. Countdown hidden.', 'success');
+            } else if (newStartTime) {
+                pool.startTime = new Date(newStartTime).toISOString();
+                await logActivity(
+                    'Start Time Updated',
+                    `Admin changed start time for ${pool.name} from ${oldStartTime} to ${new Date(pool.startTime).toLocaleString()}`
+                );
+                showToast('Start time updated!', 'success');
+            } else {
+                errorEl.textContent = 'Please select a start time or check "Remove start time"';
+                return;
+            }
+            
+            await saveData();
+            closeModal('editStartTimeModal');
+            currentEditingPool = null;
+            renderPoolView(pool);
+            displayPools(); // Refresh pool list to update countdown
+        }
+
+        function showRandomSelectModal(poolId, isAdmin) {
+            const pool = pools.find(p => p.id === poolId);
+            const errorEl = document.getElementById('randomSelectError');
+            const successEl = document.getElementById('randomSelectSuccess');
+            errorEl.textContent = '';
+            successEl.textContent = '';
+            
+            let count, targetUser;
+            const availableSquares = pool.grid.flat().filter(s => s === null).length;
+            
+            if (isAdmin) {
+                const userId = document.getElementById('randomSelectUser').value;
+                count = parseInt(document.getElementById('randomSquareCountAdmin').value);
+                
+                if (!userId) {
+                    showToast('Please select a user first', 'error');
+                    return;
+                }
+                
+                targetUser = users.find(u => u.id === userId);
+                const maxByTokens = Math.floor(targetUser.tokens / pool.tokensPerSquare);
+                const maxSquares = Math.min(maxByTokens, availableSquares);
+                
+                if (count > availableSquares) {
+                    showToast(`Only ${availableSquares} square${availableSquares !== 1 ? 's' : ''} available on the board`, 'error');
+                    return;
+                }
+                
+                if (count > maxByTokens) {
+                    showToast(`User only has enough tokens for ${maxByTokens} square${maxByTokens !== 1 ? 's' : ''}`, 'error');
+                    return;
+                }
+            } else {
+                count = parseInt(document.getElementById('randomSquareCount').value);
+                targetUser = currentUser;
+                
+                const maxByTokens = Math.floor(currentUser.tokens / pool.tokensPerSquare);
+                const maxSquares = Math.min(maxByTokens, availableSquares);
+                
+                if (count > availableSquares) {
+                    showToast(`Only ${availableSquares} square${availableSquares !== 1 ? 's' : ''} available on the board`, 'error');
+                    return;
+                }
+                
+                if (count > maxByTokens) {
+                    showToast(`You only have enough tokens for ${maxByTokens} square${maxByTokens !== 1 ? 's' : ''}`, 'error');
+                    return;
+                }
+            }
+            
+            if (!count || count < 1) {
+                showToast('Please enter a valid number of squares', 'error');
+                return;
+            }
+            
+            // Store pending selection
+            pendingRandomSelection = {
+                poolId,
+                count,
+                targetUser,
+                isAdmin
+            };
+            
+            // Show confirmation modal
+            const content = document.getElementById('randomSelectContent');
+            const totalCost = count * pool.tokensPerSquare;
+            
+            content.innerHTML = `
+                <div style="margin: 20px 0;">
+                    <p><strong>Pool:</strong> ${pool.name}</p>
+                    <p><strong>${isAdmin ? 'Assigning to' : 'You will receive'}:</strong> ${count} random square${count !== 1 ? 's' : ''}</p>
+                    <p><strong>Total cost:</strong> ${totalCost} token${totalCost !== 1 ? 's' : ''}</p>
+                    ${isAdmin ? `<p><strong>User:</strong> ${targetUser.firstName} ${targetUser.lastName}</p>` : ''}
+                    <p><strong>Remaining tokens after:</strong> ${targetUser.tokens - totalCost}</p>
+                </div>
+                <p style="color: #666; font-size: 0.9em;">Squares will be selected randomly from available positions.</p>
+            `;
+            
+            document.getElementById('randomSelectModal').classList.add('active');
+        }
+
+        async function confirmRandomSelection() {
+            if (!pendingRandomSelection) return;
+            
+            const { poolId, count, targetUser, isAdmin } = pendingRandomSelection;
+            const pool = pools.find(p => p.id === poolId);
+            const errorEl = document.getElementById('randomSelectError');
+            const successEl = document.getElementById('randomSelectSuccess');
+            
+            errorEl.textContent = '';
+            successEl.textContent = '';
+            
+            // Get all empty squares
+            const emptySquares = [];
+            pool.grid.forEach((row, rowIdx) => {
+                row.forEach((cell, colIdx) => {
+                    if (cell === null) {
+                        emptySquares.push({ row: rowIdx, col: colIdx });
+                    }
+                });
+            });
+            
+            if (emptySquares.length < count) {
+                errorEl.textContent = 'Not enough empty squares available!';
+                return;
+            }
+            
+            // Check tokens again
+            const totalCost = count * pool.tokensPerSquare;
+            if (targetUser.tokens < totalCost) {
+                errorEl.textContent = 'Not enough tokens!';
+                return;
+            }
+            
+            // Randomly select squares
+            const selectedSquares = [];
+            for (let i = 0; i < count; i++) {
+                const randomIndex = Math.floor(Math.random() * emptySquares.length);
+                const square = emptySquares.splice(randomIndex, 1)[0];
+                selectedSquares.push(square);
+                
+                // Assign square
+                pool.grid[square.row][square.col] = {
+                    userId: targetUser.id,
+                    firstName: targetUser.firstName,
+                    lastName: targetUser.lastName
+                };
+            }
+            
+            // Deduct tokens
+            const userIndex = users.findIndex(u => u.id === targetUser.id);
+            users[userIndex].tokens -= totalCost;
+            users[userIndex].tokensSpent = (users[userIndex].tokensSpent || 0) + totalCost;
+            
+            // Update current user if applicable
+            if (targetUser.id === currentUser.id) {
+                currentUser.tokens = users[userIndex].tokens;
+                currentUser.tokensSpent = users[userIndex].tokensSpent;
+                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                document.getElementById('userTokens').textContent = currentUser.tokens;
+            }
+            
+            // Log activity
+            const squaresList = selectedSquares.map(s => `(${s.row},${s.col})`).join(', ');
+            if (isAdmin) {
+                await logActivity(
+                    'Random Assignment by Admin',
+                    `Admin randomly assigned ${count} square${count !== 1 ? 's' : ''} to ${targetUser.firstName} ${targetUser.lastName} in ${pool.name}: ${squaresList}. Cost: ${totalCost} token${totalCost !== 1 ? 's' : ''}`
+                );
+            } else {
+                await logActivity(
+                    'Random Square Selection',
+                    `User randomly selected ${count} square${count !== 1 ? 's' : ''} in ${pool.name}: ${squaresList}. Cost: ${totalCost} token${totalCost !== 1 ? 's' : ''}`
+                );
+            }
+            
+            await saveData();
+            
+            // Close modal and refresh
+            closeModal('randomSelectModal');
+            pendingRandomSelection = null;
+            renderPoolView(pool);
+            
+            showToast(`${count} square${count !== 1 ? 's' : ''} randomly selected! ${totalCost} token${totalCost !== 1 ? 's' : ''} spent.`, 'success');
+            
+            // Show warning if low on tokens
+            if (targetUser.id === currentUser.id && currentUser.tokens === 1) {
+                setTimeout(() => {
+                    showToast('⚠️ Warning: You only have 1 token remaining!', 'warning', 5000);
+                }, 500);
+            }
+        }
+
+        function showResetPasswordModal() {
+            document.getElementById('resetPasswordModal').classList.add('active');
+        }
+
+        async function requestPasswordReset() {
+            const email = document.getElementById('resetEmail').value.trim().toLowerCase();
+            const errorEl = document.getElementById('resetError');
+            const successEl = document.getElementById('resetSuccess');
+            errorEl.textContent = '';
+            successEl.textContent = '';
+
+            if (!email) {
+                errorEl.textContent = 'Please enter your email';
+                return;
+            }
+
+            const user = users.find(u => u.email === email);
+            if (!user) {
+                errorEl.textContent = 'No account found with this email';
+                return;
+            }
+
+            // Check if reset was requested in last 15 minutes
+            const now = Date.now();
+            if (passwordResetTokens[email] && (now - passwordResetTokens[email].timestamp) < 15 * 60 * 1000) {
+                const remaining = Math.ceil((15 * 60 * 1000 - (now - passwordResetTokens[email].timestamp)) / 1000 / 60);
+                errorEl.textContent = `Please wait ${remaining} more minute(s) before requesting another reset`;
+                return;
+            }
+
+            // Generate reset token (in real app, this would be sent via email)
+            const token = Math.random().toString(36).substring(2, 15);
+            passwordResetTokens[email] = {
+                token,
+                timestamp: now,
+                expires: now + 15 * 60 * 1000
+            };
+
+            await logActivity('Password Reset Requested', `User ${user.firstName} ${user.lastName} requested password reset`);
+
+            successEl.textContent = `Password reset link generated! In a real app, this would be emailed to you. For demo purposes, your temporary password is: ${token}. Use it to login and you'll be prompted to change it.`;
+            
+            // For demo, automatically set temp password
+            user.password = token;
+            user.needsPasswordChange = true;
+            await saveData();
+        }
+
+        async function lockAndStartPool(poolId) {
+            const pool = pools.find(p => p.id === poolId);
+            
+            // Check if all squares are filled
+            const filledSquares = pool.grid.flat().filter(s => s !== null).length;
+            if (filledSquares < 100) {
+                alert('All squares must be filled before starting the game!');
+                return;
+            }
+
+            // Generate random numbers 0-9
+            pool.topNumbers = shuffleArray([0,1,2,3,4,5,6,7,8,9]);
+            pool.sideNumbers = shuffleArray([0,1,2,3,4,5,6,7,8,9]);
+            pool.isLocked = true;
+
+            await logActivity(
+                'Game Started',
+                `Admin locked and started game: ${pool.name}. Numbers randomly assigned.`
+            );
+
+            await saveData();
+            renderPoolView(pool);
+        }
+
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        async function updateScore(poolId, quarter, team, value) {
+            const pool = pools.find(p => p.id === poolId);
+            const numValue = parseInt(value);
+            
+            // Validate: must be 0 or positive
+            if (value !== '' && (isNaN(numValue) || numValue < 0)) {
+                alert('Score must be 0 or a positive number');
+                renderPoolView(pool);
+                return;
+            }
+            
+            if (!pool.scores[quarter]) pool.scores[quarter] = {};
+            pool.scores[quarter][team] = value === '' ? '' : numValue;
+
+            // Check if both scores are entered
+            if (pool.scores[quarter].seahawks !== '' && pool.scores[quarter].patriots !== '') {
+                const seahawksDigit = pool.scores[quarter].seahawks % 10;
+                const patriotsDigit = pool.scores[quarter].patriots % 10;
+
+                // Find winning square
+                const colIndex = pool.topNumbers.indexOf(seahawksDigit);
+                const rowIndex = pool.sideNumbers.indexOf(patriotsDigit);
+
+                const previousWinner = pool.winners[quarter];
+
+                if (colIndex !== -1 && rowIndex !== -1) {
+                    const winner = pool.grid[rowIndex][colIndex];
+                    if (winner) {
+                        pool.winners[quarter] = `${winner.firstName} ${winner.lastName}`;
+                        if (!pool.winningSquares) pool.winningSquares = {};
+                        pool.winningSquares[quarter] = { row: rowIndex, col: colIndex };
+                        
+                        const quarterNames = {q1: '1st Quarter', q2: '2nd Quarter', q3: '3rd Quarter', q4: '4th Quarter', final: 'Final'};
+                        const prize = Math.floor(pool.tokensPerSquare * 100 / 5);
+                        
+                        if (previousWinner !== pool.winners[quarter]) {
+                            await logActivity(
+                                'Winner Determined',
+                                `${quarterNames[quarter]} winner for ${pool.name}: ${pool.winners[quarter]} (${prize} tokens)`
+                            );
+                        }
+                    }
+                }
+            } else {
+                // If scores incomplete, clear winner for this quarter
+                if (pool.winners[quarter]) {
+                    delete pool.winners[quarter];
+                    if (pool.winningSquares && pool.winningSquares[quarter]) {
+                        delete pool.winningSquares[quarter];
+                    }
+                }
+            }
+
+            await saveData();
+            renderPoolView(pool);
+        }
+
+        async function updateNumber(poolId, type, index, value) {
+            const pool = pools.find(p => p.id === poolId);
+            const num = parseInt(value);
+            
+            if (isNaN(num) || num < 0 || num > 9) {
+                alert('Please enter a number between 0 and 9');
+                return;
+            }
+
+            const numbers = type === 'top' ? pool.topNumbers : pool.sideNumbers;
+            
+            // Check for duplicates
+            if (numbers.includes(num) && numbers[index] !== num) {
+                alert('This number is already used!');
+                return;
+            }
+
+            numbers[index] = num;
+            await saveData();
+            renderPoolView(pool);
+        }
+
+        function showCreatePoolModal() {
+            document.getElementById('createPoolModal').classList.add('active');
+        }
+
+        async function createPool() {
+            const name = document.getElementById('newPoolName').value.trim();
+            const tokens = parseInt(document.getElementById('newPoolTokens').value);
+            const startTime = document.getElementById('newPoolStartTime').value;
+            const errorEl = document.getElementById('createPoolError');
+            errorEl.textContent = '';
+
+            if (!name) {
+                errorEl.textContent = 'Pool name is required';
+                return;
+            }
+
+            if (tokens < 1) {
+                errorEl.textContent = 'Tokens per square must be at least 1';
+                return;
+            }
+
+            // Create empty 10x10 grid
+            const grid = Array(10).fill(null).map(() => Array(10).fill(null));
+
+            const newPool = {
+                id: Date.now().toString(),
+                name,
+                tokensPerSquare: tokens,
+                startTime: startTime || null,
+                grid,
+                topNumbers: Array(10).fill(null),
+                sideNumbers: Array(10).fill(null),
+                isLocked: false,
+                isComplete: false,
+                scores: {},
+                winners: {},
+                winningSquares: {}
+            };
+
+            pools.push(newPool);
+
+            await logActivity(
+                'Pool Created',
+                `Admin created new pool: ${name} (${tokens} token${tokens > 1 ? 's' : ''} per square)${startTime ? ` - Starts: ${new Date(startTime).toLocaleString()}` : ''}`
+            );
+
+            await saveData();
+            closeModal('createPoolModal');
+            displayPools();
+        }
+
+        function showManageUsersModal() {
+            const modal = document.getElementById('manageUsersModal');
+            const usersList = document.getElementById('usersList');
+            
+            let html = '';
+            users.filter(u => !u.isAdmin).forEach(user => {
+                html += `
+                    <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <strong>${user.firstName} ${user.lastName}</strong>
+                            <div style="font-size: 0.9em; color: #666;">${user.email}</div>
+                        </div>
+                        <input type="number" value="${user.tokens}" min="0" 
+                               style="width: 100px;" id="tokens-${user.id}">
+                        <button class="btn btn-primary" onclick="updateUserTokens('${user.id}')">Update</button>
+                    </div>
+                `;
+            });
+
+            usersList.innerHTML = html;
+            modal.classList.add('active');
+        }
+
+        async function updateUserTokens(userId) {
+            const newTokens = parseInt(document.getElementById(`tokens-${userId}`).value);
+            const userIndex = users.findIndex(u => u.id === userId);
+            const oldTokens = users[userIndex].tokens;
+            users[userIndex].tokens = newTokens;
+
+            await logActivity(
+                'Tokens Updated by Admin',
+                `Admin changed ${users[userIndex].firstName} ${users[userIndex].lastName}'s tokens from ${oldTokens} to ${newTokens}`
+            );
+
+            if (currentUser.id === userId) {
+                currentUser.tokens = newTokens;
+                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                document.getElementById('userTokens').textContent = newTokens;
+            }
+
+            await saveData();
+            showToast(`Tokens updated for ${users[userIndex].firstName} ${users[userIndex].lastName}!`, 'success');
+        }
+
+        function exportData() {
+            const data = {
+                users: users,
+                pools: pools,
+                activityLog: activityLog,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `football-pool-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showToast('Data exported successfully!', 'success');
+        }
+
+        async function importData(file) {
+            if (!file) return;
+            
+            if (!confirm('⚠️ WARNING: This will replace ALL current data (users, pools, activity log). Are you sure you want to continue?')) {
+                document.getElementById('importFile').value = ''; // Clear file input
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Validate data structure
+                    if (!data.users || !data.pools || !data.activityLog) {
+                        throw new Error('Invalid backup file format');
+                    }
+                    
+                    // Import data
+                    users = data.users;
+                    pools = data.pools;
+                    activityLog = data.activityLog;
+                    
+                    await saveData();
+                    
+                    // Log the import
+                    await logActivity(
+                        'Data Imported',
+                        `Admin imported data from backup file (${data.exportDate || 'unknown date'})`
+                    );
+                    
+                    showToast('Data imported successfully! Page will reload...', 'success', 2000);
+                    setTimeout(() => location.reload(), 2000);
+                } catch (error) {
+                    showToast('Error importing data: ' + error.message, 'error', 6000);
+                    console.error('Import error:', error);
+                }
+                
+                // Clear file input
+                document.getElementById('importFile').value = '';
+            };
+            
+            reader.onerror = () => {
+                showToast('Error reading file', 'error');
+                document.getElementById('importFile').value = '';
+            };
+            
+            reader.readAsText(file);
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Initialize app on load
+        initApp();
+    </script>
+</body>
+</html>
