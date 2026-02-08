@@ -155,6 +155,76 @@ export async function getActivityLogs(limitCount = 500) {
   return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
+// Get activity logs for a specific user (user's actions + actions affecting them)
+export async function getUserActivityLogs(userId, limitCount = 20) {
+  // Query for logs where user performed action OR was targeted by action
+  // Note: Firestore doesn't support OR queries directly, so we need two queries
+  
+  // Query 1: Logs where user performed the action
+  const q1 = query(
+    collection(db, 'activityLog'),
+    where('userId', '==', userId),
+    orderBy('timestamp', 'desc'),
+    limit(limitCount)
+  );
+  
+  // Query 2: Logs where user was targeted (admin actions affecting them)
+  const q2 = query(
+    collection(db, 'activityLog'),
+    where('targetUserId', '==', userId),
+    orderBy('timestamp', 'desc'),
+    limit(limitCount)
+  );
+  
+  const [snap1, snap2] = await Promise.all([
+    getDocs(q1),
+    getDocs(q2)
+  ]);
+  
+  const logs1 = snap1.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const logs2 = snap2.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  // Combine and remove duplicates
+  const allLogs = [...logs1, ...logs2];
+  const uniqueLogs = Array.from(
+    new Map(allLogs.map(log => [log.id, log])).values()
+  );
+  
+  // Sort by timestamp and limit
+  return uniqueLogs
+    .sort((a, b) => {
+      const aTime = a.timestamp?.toMillis?.() || 0;
+      const bTime = b.timestamp?.toMillis?.() || 0;
+      return bTime - aTime;
+    })
+    .slice(0, limitCount);
+}
+
+// Get activity logs with filters (for admin search)
+export async function getFilteredActivityLogs(filters = {}) {
+  let q = collection(db, 'activityLog');
+  const constraints = [];
+  
+  // Add filters
+  if (filters.userId) {
+    constraints.push(where('userId', '==', filters.userId));
+  }
+  
+  if (filters.action) {
+    constraints.push(where('action', '==', filters.action));
+  }
+  
+  // Always order by timestamp
+  constraints.push(orderBy('timestamp', 'desc'));
+  
+  // Limit results
+  constraints.push(limit(filters.limit || 200));
+  
+  q = query(q, ...constraints);
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
 // ============= MIGRATION HELPER =============
 
 export async function importExistingData(users, pools, activityLog) {

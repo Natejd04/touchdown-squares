@@ -30,7 +30,9 @@ import {
   updateSquare,
   updateMultipleSquares,
   addActivityLog,
-  getActivityLogs
+  getActivityLogs,
+  getUserActivityLogs,
+  getFilteredActivityLogs
 } from './database-service.js';
 
 // Global app state
@@ -170,8 +172,23 @@ const app = {
     try {
       this.users = await getAllUsers();
       this.pools = await getAllPools();
-      this.activityLog = await getActivityLogs(500);
-      console.log(`📊 Loaded ${this.users.length} users, ${this.pools.length} pools, ${this.activityLog.length} logs`);
+      
+      // Smart activity log loading based on user type
+      if (this.currentUser) {
+        if (this.currentUser.isAdmin) {
+          // Admins: Load last 50 (unless filters applied)
+          this.activityLog = await getActivityLogs(50);
+          console.log(`📊 Loaded ${this.users.length} users, ${this.pools.length} pools, ${this.activityLog.length} logs (admin: last 50)`);
+        } else {
+          // Regular users: Load last 20 relevant to them
+          this.activityLog = await getUserActivityLogs(this.currentUser.id, 20);
+          console.log(`📊 Loaded ${this.users.length} users, ${this.pools.length} pools, ${this.activityLog.length} logs (user: last 20 personal)`);
+        }
+      } else {
+        // Guest mode: No activity logs needed
+        this.activityLog = [];
+        console.log(`📊 Loaded ${this.users.length} users, ${this.pools.length} pools (guest mode)`);
+      }
 
     } catch (error) {
       console.error('Error loading data:', error);
@@ -1815,16 +1832,30 @@ const app = {
     this.applyActivityFilters();
   },
 
-  applyActivityFilters() {
+  async applyActivityFilters() {
     const userFilter = document.getElementById('filterUser').value;
     const actionFilter = document.getElementById('filterAction').value;
     const fromDate = document.getElementById('filterFromDate').value;
     const toDate = document.getElementById('filterToDate').value;
 
+    // If admin is using filters, load more data from database
+    if (this.currentUser && this.currentUser.isAdmin && (userFilter || actionFilter)) {
+      try {
+        const filters = {};
+        if (userFilter) filters.userId = userFilter;
+        if (actionFilter) filters.action = actionFilter;
+        filters.limit = 200; // Load more when filtering
+        
+        this.activityLog = await getFilteredActivityLogs(filters);
+        this.showToast('Loading filtered activity logs...', 'info', 2000);
+      } catch (error) {
+        console.error('Error loading filtered logs:', error);
+        this.showToast('Error loading filtered logs', 'error');
+      }
+    }
+
+    // Apply client-side date filters
     this.filteredActivityLog = this.activityLog.filter(entry => {
-      if (userFilter && entry.userId !== userFilter) return false;
-      if (actionFilter && entry.action !== actionFilter) return false;
-      
       // Handle Firestore Timestamp conversion
       let entryDate;
       if (entry.timestamp && entry.timestamp.toDate) {
@@ -1844,12 +1875,20 @@ const app = {
     this.renderActivityLog();
   },
 
-  clearActivityFilters() {
+  async clearActivityFilters() {
     document.getElementById('filterUser').value = '';
     document.getElementById('filterAction').value = '';
     document.getElementById('filterFromDate').value = '';
     document.getElementById('filterToDate').value = '';
-    this.applyActivityFilters();
+    
+    // Reload default limited activity logs
+    if (this.currentUser && this.currentUser.isAdmin) {
+      this.activityLog = await getActivityLogs(50);
+    } else if (this.currentUser) {
+      this.activityLog = await getUserActivityLogs(this.currentUser.id, 20);
+    }
+    
+    await this.applyActivityFilters();
   },
 
   renderActivityLog() {
