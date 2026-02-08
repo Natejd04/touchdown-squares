@@ -87,7 +87,7 @@ const app = {
     "Russell Wilson > Tom Shady... I mean Brady! Go Hawks! 🏈",
     "Patriots: Spying on signals since 2007. Seahawks: Just being awesome since 1976! 🦅",
     "The only rings the Patriots deserve are onion rings! Go Seahawks! 🏆",
-    "Seahawks: Built by Macdonald, not controversy! 💚💙",
+    "Seahawks: Built by Carroll, not controversy! 💚💙",
     "Why do Patriots fans love their team? Because misery loves company! Go Hawks! 🦅",
     "Patriots' favorite play: The cover-up! Seahawks' favorite play: Touchdowns! 🏈",
     "Deflategate? More like Defeat-gate when they face the Hawks! 🦅",
@@ -114,6 +114,19 @@ const app = {
   formatName(firstName, lastName) {
     if (!firstName || !lastName) return 'Unknown';
     return `${firstName} ${lastName.charAt(0)}.`;
+  },
+
+  // Check if all 5 scores have been submitted and confirmed
+  isPoolCompleted(pool) {
+    if (!pool.isLocked || !pool.scores) return false;
+    
+    const requiredPeriods = ['q1', 'q2', 'q3', 'q4', 'final'];
+    return requiredPeriods.every(period => 
+      pool.scores[period] && 
+      pool.scores[period].confirmed === true &&
+      pool.scores[period].seahawks !== undefined &&
+      pool.scores[period].patriots !== undefined
+    );
   },
 
   // Initialize the app
@@ -243,6 +256,14 @@ const app = {
 
   async logout() {
     try {
+      // Clean up real-time listener on logout
+      if (this.poolListener) {
+        console.log('Cleaning up pool listener on logout');
+        this.poolListener();
+        this.poolListener = null;
+      }
+      this.currentViewingPoolId = null;
+      
       await signOut(auth);
       this.currentUser = null;
       this.isGuestMode = false;
@@ -358,7 +379,8 @@ const app = {
     };
     
     await addActivityLog(entry);
-    await this.loadData(); // Reload to get updated activity log
+    // Removed loadData() - real-time listeners handle updates automatically
+    // This significantly reduces quota usage
   },
 
   // Toast notifications
@@ -511,6 +533,14 @@ const app = {
   },
 
   backToPoolsList() {
+    // Clean up real-time listener when leaving pool view
+    if (this.poolListener) {
+      console.log('Cleaning up pool listener');
+      this.poolListener();
+      this.poolListener = null;
+    }
+    this.currentViewingPoolId = null;
+    
     document.getElementById('poolsList').classList.remove('hidden');
     document.getElementById('poolView').classList.add('hidden');
     this.displayPools();
@@ -520,12 +550,22 @@ const app = {
     const container = document.getElementById('poolDetails');
     const filledSquares = pool.grid.flat().filter(s => s !== null).length;
     const availableSquares = 100 - filledSquares;
+    const isCompleted = this.isPoolCompleted(pool);
     
     let html = `<h2>${pool.name}</h2>`;
     
+    // Status badge
+    if (isCompleted) {
+      html += `<div class="pool-status-badge completed">✅ Completed - All Scores Submitted</div>`;
+    } else if (pool.isLocked) {
+      html += `<div class="pool-status-badge locked">🔒 Locked - Game in Progress</div>`;
+    } else {
+      html += `<div class="pool-status-badge open">📝 Open - Accepting Entries</div>`;
+    }
+    
     if (pool.startTime && !pool.isLocked) {
       const startTime = new Date(pool.startTime).getTime();
-      html += `<div class="countdown-timer" data-target-time="${startTime}"></div>`;
+      html += `<div class="countdown-timer" data-target-time="${startTime}" data-pool-id="${pool.id}"></div>`;
     }
     
     html += `<p><strong>Cost:</strong> ${pool.tokensPerSquare} token${pool.tokensPerSquare > 1 ? 's' : ''} per square</p>`;
@@ -889,14 +929,16 @@ const app = {
     const cellData = pool.grid[row][col];
     
     if (cellData) {
-      const user = this.users.find(u => u.id === cellData.userId);
-      if (user) {
-        const tokensBefore = user.tokens;
-        const tokensAfter = user.tokens + pool.tokensPerSquare;
+      // IMPORTANT: Get fresh user data from database to avoid stale token counts
+      const freshUser = await getUser(cellData.userId);
+      
+      if (freshUser) {
+        const tokensBefore = freshUser.tokens;
+        const tokensAfter = freshUser.tokens + pool.tokensPerSquare;
         
-        await dbUpdateUser(user.id, {
+        await dbUpdateUser(cellData.userId, {
           tokens: tokensAfter,
-          tokensSpent: (user.tokensSpent || 0) - pool.tokensPerSquare
+          tokensSpent: (freshUser.tokensSpent || 0) - pool.tokensPerSquare
         });
         
         await this.logActivity(
@@ -904,18 +946,19 @@ const app = {
           `Removed ${this.formatName(cellData.firstName, cellData.lastName)} from square (${row}, ${col}) in ${pool.name}. ${pool.tokensPerSquare} token(s) refunded. Tokens: ${tokensBefore} → ${tokensAfter}`,
           cellData.userId
         );
+        
+        this.showToast(`Square cleared. ${pool.tokensPerSquare} token${pool.tokensPerSquare > 1 ? 's' : ''} refunded to ${this.formatName(cellData.firstName, cellData.lastName)}.`, 'info');
       } else {
         await this.logActivity(
           'Square Cleared by Admin',
           `Removed square (${row}, ${col}) in ${pool.name}. User not found.`
         );
+        this.showToast('Square cleared, but user not found.', 'warning');
       }
       
       await updateSquare(poolId, row, col, null);
       await this.loadData();
       this.renderPoolView(this.pools.find(p => p.id === poolId));
-      
-      this.showToast(`Square cleared. ${pool.tokensPerSquare} token${pool.tokensPerSquare > 1 ? 's' : ''} refunded to ${this.formatName(cellData.firstName, cellData.lastName)}.`, 'info');
     }
   },
 
@@ -1158,26 +1201,111 @@ const app = {
 
   showManageUsersModal() {
     const container = document.getElementById('usersList');
-    container.innerHTML = '';
-
-    this.users.filter(u => !u.isAdmin).forEach(user => {
-      const div = document.createElement('div');
-      div.className = 'user-token-row';
-      div.innerHTML = `
-        <div>
-          <strong>${user.firstName} ${user.lastName}</strong><br>
-          <span style="font-size: 0.9em; color: #666;">${user.email}</span>
-        </div>
-        <div class="token-controls">
-          <label>Tokens:</label>
-          <input type="number" id="tokens-${user.id}" value="${user.tokens}" min="0" style="width: 80px;">
-          <button class="btn btn-primary" onclick="app.updateUserTokens('${user.id}')">Update</button>
+    const nonAdminUsers = this.users.filter(u => !u.isAdmin);
+    
+    let html = '';
+    
+    // Add search/filter if more than 5 users
+    if (nonAdminUsers.length > 5) {
+      html += `
+        <div class="user-search">
+          <input type="text" id="userSearchInput" placeholder="🔍 Search users..." onkeyup="app.filterUsers()">
         </div>
       `;
-      container.appendChild(div);
+    }
+    
+    html += '<div class="users-list-container">';
+    
+    nonAdminUsers.forEach(user => {
+      const totalSpent = user.tokensSpent || 0;
+      const totalSquares = this.pools.reduce((sum, pool) => {
+        return sum + pool.grid.flat().filter(cell => cell && cell.userId === user.id).length;
+      }, 0);
+      
+      html += `
+        <div class="user-card" data-user-name="${user.firstName.toLowerCase()} ${user.lastName.toLowerCase()}" data-user-email="${user.email.toLowerCase()}">
+          <div class="user-card-header" onclick="app.toggleUserCard(this)">
+            <div class="user-info-compact">
+              <strong>${this.formatName(user.firstName, user.lastName)}</strong>
+              <span class="user-email">${user.email}</span>
+            </div>
+            <div class="user-tokens-badge">
+              💰 ${user.tokens}
+              <span class="expand-icon">▼</span>
+            </div>
+          </div>
+          <div class="user-card-content" style="display: none;">
+            <div class="user-stats">
+              <div class="stat-item">
+                <span class="stat-label">Available:</span>
+                <span class="stat-value">${user.tokens} tokens</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Spent:</span>
+                <span class="stat-value">${totalSpent} tokens</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Squares:</span>
+                <span class="stat-value">${totalSquares}</span>
+              </div>
+            </div>
+            <div class="token-update-section">
+              <label>Update Tokens:</label>
+              <div class="token-input-group">
+                <button class="btn-small btn-secondary" onclick="app.adjustTokens('${user.id}', -10)">-10</button>
+                <button class="btn-small btn-secondary" onclick="app.adjustTokens('${user.id}', -5)">-5</button>
+                <button class="btn-small btn-secondary" onclick="app.adjustTokens('${user.id}', -1)">-1</button>
+                <input type="number" id="tokens-${user.id}" value="${user.tokens}" min="0" class="token-input">
+                <button class="btn-small btn-secondary" onclick="app.adjustTokens('${user.id}', 1)">+1</button>
+                <button class="btn-small btn-secondary" onclick="app.adjustTokens('${user.id}', 5)">+5</button>
+                <button class="btn-small btn-secondary" onclick="app.adjustTokens('${user.id}', 10)">+10</button>
+              </div>
+              <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="app.updateUserTokens('${user.id}')">💾 Save Changes</button>
+            </div>
+          </div>
+        </div>
+      `;
     });
-
+    
+    html += '</div>';
+    container.innerHTML = html;
     document.getElementById('manageUsersModal').classList.add('active');
+  },
+
+  toggleUserCard(header) {
+    const content = header.nextElementSibling;
+    const icon = header.querySelector('.expand-icon');
+    
+    if (content.style.display === 'none') {
+      content.style.display = 'block';
+      icon.textContent = '▲';
+    } else {
+      content.style.display = 'none';
+      icon.textContent = '▼';
+    }
+  },
+
+  adjustTokens(userId, amount) {
+    const input = document.getElementById(`tokens-${userId}`);
+    const currentValue = parseInt(input.value) || 0;
+    const newValue = Math.max(0, currentValue + amount);
+    input.value = newValue;
+  },
+
+  filterUsers() {
+    const searchTerm = document.getElementById('userSearchInput').value.toLowerCase();
+    const userCards = document.querySelectorAll('.user-card');
+    
+    userCards.forEach(card => {
+      const userName = card.dataset.userName;
+      const userEmail = card.dataset.userEmail;
+      
+      if (userName.includes(searchTerm) || userEmail.includes(searchTerm)) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
   },
 
   async updateUserTokens(userId) {
@@ -1485,6 +1613,13 @@ const app = {
         this.currentUser.tokens = result.newTokens;
         this.currentUser.tokensSpent = (this.currentUser.tokensSpent || 0) + result.totalCost;
         document.getElementById('userTokens').textContent = result.newTokens;
+      }
+      
+      // Update local users array to prevent stale data when admin clears squares
+      const userIndex = this.users.findIndex(u => u.id === targetUser.id);
+      if (userIndex >= 0) {
+        this.users[userIndex].tokens = result.newTokens;
+        this.users[userIndex].tokensSpent = (this.users[userIndex].tokensSpent || 0) + result.totalCost;
       }
       
       const squaresList = result.selectedSquares.map(s => `(${s.row},${s.col})`).join(', ');
@@ -2012,12 +2147,19 @@ const app = {
 
     timers.forEach(timer => {
       const targetTime = parseInt(timer.dataset.targetTime);
+      const poolId = timer.dataset.poolId;
       if (!targetTime) return;
 
       const diff = targetTime - now;
 
       if (diff <= 0) {
         timer.innerHTML = '<span style="color: #ffc107;">🏈 Game Time!</span>';
+        
+        // Auto-lock pool if it hasn't been locked yet
+        if (poolId && !timer.dataset.autoLocked) {
+          timer.dataset.autoLocked = 'true'; // Prevent multiple locks
+          this.autoLockPool(poolId);
+        }
         return;
       }
 
@@ -2031,13 +2173,39 @@ const app = {
       countdownText += `${hours}h ${minutes}m ${seconds}s`;
 
       if (diff < 3600000) {
-        timer.style.color = '#ff6b6b';
-        timer.style.fontWeight = 'bold';
+        timer.classList.add('urgent');
       }
 
       timer.textContent = countdownText;
     });
   },
+
+  async autoLockPool(poolId) {
+    // Check if pool exists and is not already locked
+    const pool = this.pools.find(p => p.id === poolId);
+    if (!pool || pool.isLocked) return;
+
+    // Check if pool is full (100 squares)
+    const filledSquares = pool.grid.flat().filter(s => s !== null).length;
+    
+    if (filledSquares < 100) {
+      console.log(`Pool ${pool.name} reached start time but only has ${filledSquares}/100 squares filled. Not auto-locking.`);
+      this.showToast(`⏰ ${pool.name} start time reached, but pool is not full. Admin can lock manually when ready.`, 'warning', 8000);
+      return;
+    }
+
+    // Auto-lock the pool
+    console.log(`Auto-locking pool ${pool.name} - countdown reached 0`);
+    
+    if (this.currentUser.isAdmin) {
+      await this.lockAndStartPool(poolId);
+    } else {
+      // For non-admin users, just refresh to show the locked state (admin should lock it)
+      this.showToast(`⏰ ${pool.name} start time reached! Waiting for admin to lock the pool...`, 'info', 8000);
+      await this.loadData();
+    }
+  },
+
 
   toggleGridSize(poolId) {
     const container = document.querySelector('.grid-container');

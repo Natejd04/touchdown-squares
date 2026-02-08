@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <!-- Gradient for 3D effect -->
+    <radialGradient id="footballGradient" cx="35%" cy="35%">
+      <stop offset="0%" style="stop-color:#A0522D;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8B4513;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#654321;stop-opacity:1" />
+    </radialGradient>
+    
+    <!-- Shadow gradient -->
+    <radialGradient id="shadowGradient" cx="50%" cy="50%">
+      <stop offset="0%" style="stop-color:#000000;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Shadow -->
+  <ellipse cx="50" cy="85" rx="35" ry="8" fill="url(#shadowGradient)" />
+  
+  <!-- Main football body -->
+  <ellipse cx="50" cy="50" rx="40" ry="35" fill="url(#footballGradient)" stroke="#654321" stroke-width="1.5" />
+  
+  <!-- White center stripe -->
+  <line x1="25" y1="50" x2="75" y2="50" stroke="white" stroke-width="3" stroke-linecap="round" />
+  
+  <!-- Laces -->
+  <line x1="35" y1="40" x2="35" y2="60" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+  <line x1="43" y1="40" x2="43" y2="60" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+  <line x1="50" y1="40" x2="50" y2="60" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+  <line x1="57" y1="40" x2="57" y2="60" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+  <line x1="65" y1="40" x2="65" y2="60" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+  
+  <!-- Cute sparkles for extra charm -->
+  <g fill="white" opacity="0.9">
+    <!-- Big sparkle top right -->
+    <path d="M 78 22 L 80 22 L 80 18 L 82 18 L 82 22 L 84 22 L 84 24 L 82 24 L 82 28 L 80 28 L 80 24 L 78 24 Z" />
+    
+    <!-- Medium sparkle top left -->
+    <path d="M 18 25 L 19.5 25 L 19.5 22 L 21 22 L 21 25 L 22.5 25 L 22.5 26.5 L 21 26.5 L 21 29 L 19.5 29 L 19.5 26.5 L 18 26.5 Z" />
+    
+    <!-- Small sparkle bottom right -->
+    <circle cx="75" cy="70" r="1.5" />
+    <circle cx="70" cy="75" r="1" />
+  </g>
+  
+  <!-- Highlight for glossy effect -->
+  <ellipse cx="38" cy="38" rx="12" ry="10" fill="white" opacity="0.25" />
+</svg>
