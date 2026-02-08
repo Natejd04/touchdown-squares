@@ -1,0 +1,12 @@
+{
+  "name": "Touchdown Squares - Football Pool",
+  "short_name": "TD Squares",
+  "description": "Football Squares Pool Game for Super Bowl",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a472a",
+  "theme_color": "#2d5a3d",
+  "orientation": "portrait",
+  "icons": [
+  ]
+}
